@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>链接批量下载器</title>
+<style>
+:root{
+  --bg:#f4f6f9; --card:#fff; --line:#e3e8ef; --line2:#eef2f7;
+  --tx:#1f2937; --tx2:#64748b; --tx3:#94a3b8;
+  --pri:#2563eb; --pri-h:#1d4ed8; --pri-bg:#eff6ff;
+  --ok:#16a34a; --ok-bg:#f0fdf4; --err:#dc2626; --err-bg:#fef2f2;
+  --warn:#d97706; --warn-bg:#fffbeb;
+  --r:10px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  font:14px/1.6 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;
+  background:var(--bg);color:var(--tx);padding:0 0 60px;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+
+/* ---------- header ---------- */
+header{background:var(--card);border-bottom:1px solid var(--line);padding:16px 0;margin-bottom:20px}
+.hd{display:flex;align-items:center;gap:12px}
+.logo{width:36px;height:36px;border-radius:9px;background:var(--pri);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:19px;flex:0 0 auto}
+.hd h1{font-size:17px;font-weight:650;letter-spacing:.2px}
+.hd .sub{font-size:12px;color:var(--tx3);margin-top:1px}
+.badge{margin-left:auto;font-size:12px;padding:5px 11px;border-radius:20px;
+  background:var(--ok-bg);color:var(--ok);border:1px solid #bbf7d0;white-space:nowrap}
+.badge.bad{background:var(--err-bg);color:var(--err);border-color:#fecaca}
+
+/* ---------- card ---------- */
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--r);
+  margin-bottom:16px;overflow:hidden}
+.card-h{padding:13px 18px;border-bottom:1px solid var(--line2);display:flex;align-items:center;gap:10px;
+  background:#fbfcfe}
+.card-h .n{width:22px;height:22px;border-radius:50%;background:var(--pri);color:#fff;font-size:12px;
+  display:flex;align-items:center;justify-content:center;font-weight:600;flex:0 0 auto}
+.card-h .n.off{background:#cbd5e1}
+.card-h h2{font-size:14px;font-weight:600}
+.card-h .tip{font-size:12px;color:var(--tx3);margin-left:2px}
+.card-h .right{margin-left:auto;display:flex;gap:8px;align-items:center}
+.card-b{padding:18px}
+
+/* ---------- form ---------- */
+.pathbox{display:flex;gap:10px;align-items:stretch}
+.pathbox input{flex:1;padding:9px 12px;border:1px solid var(--line);border-radius:8px;
+  font-size:13px;font-family:ui-monospace,Consolas,monospace;background:#fbfcfe;color:var(--tx);min-width:0}
+.pathbox input:focus{outline:none;border-color:var(--pri);background:#fff}
+.opts{display:flex;gap:18px;margin-top:13px;flex-wrap:wrap;align-items:center}
+.opts label{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--tx2);cursor:pointer;
+  user-select:none}
+.opts input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--pri)}
+.opts select{padding:4px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:#fff}
+
+/* ---------- button ---------- */
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);
+  background:#fff;color:var(--tx);padding:9px 16px;font-size:13px;font-weight:500;
+  transition:.13s;white-space:nowrap}
+button:hover:not(:disabled){border-color:#cbd5e1;background:#f8fafc}
+button:active:not(:disabled){transform:translateY(1px)}
+button:disabled{opacity:.45;cursor:not-allowed}
+button.pri{background:var(--pri);border-color:var(--pri);color:#fff}
+button.pri:hover:not(:disabled){background:var(--pri-h);border-color:var(--pri-h)}
+button.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+button.ok:hover:not(:disabled){background:#15803d;border-color:#15803d}
+button.dan{background:#fff;border-color:#fecaca;color:var(--err)}
+button.dan:hover:not(:disabled){background:var(--err-bg)}
+button.sm{padding:6px 12px;font-size:12.5px}
+
+/* ---------- empty ---------- */
+.empty{text-align:center;padding:44px 20px;color:var(--tx3)}
+.empty .ic{font-size:38px;opacity:.35;margin-bottom:10px}
+.empty p{font-size:13.5px}
+.empty .hint{font-size:12.5px;margin-top:6px;color:#a8b3c2}
+
+/* ---------- toolbar ---------- */
+.bar{display:flex;gap:9px;align-items:center;flex-wrap:wrap;padding:12px 18px;
+  border-bottom:1px solid var(--line2);background:#fbfcfe}
+.bar .sep{width:1px;height:22px;background:var(--line);margin:0 3px}
+.bar label{font-size:13px;color:var(--tx2);display:flex;align-items:center;gap:5px}
+.bar select{padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-size:13px;background:#fff}
+.bar .grow{flex:1}
+
+/* ---------- summary ---------- */
+.sum{display:flex;gap:0;border-bottom:1px solid var(--line2);background:#fff}
+.sum div{flex:1;padding:12px 14px;text-align:center;border-right:1px solid var(--line2)}
+.sum div:last-child{border-right:0}
+.sum .v{font-size:19px;font-weight:650;font-variant-numeric:tabular-nums}
+.sum .k{font-size:11.5px;color:var(--tx3);margin-top:1px}
+.sum .v.c-ok{color:var(--ok)} .sum .v.c-err{color:var(--err)} .sum .v.c-pri{color:var(--pri)}
+
+/* ---------- global progress ---------- */
+.gp{height:4px;background:var(--line2);position:relative;overflow:hidden}
+.gp i{display:block;height:100%;width:0;background:var(--pri);transition:width .25s}
+
+/* ---------- group ---------- */
+.grp{border-bottom:1px solid var(--line2)}
+.grp:last-child{border-bottom:0}
+.grp-h{display:flex;align-items:center;gap:10px;padding:10px 18px;background:#fafbfd;cursor:pointer;
+  user-select:none}
+.grp-h:hover{background:#f4f7fb}
+.grp-h .arw{font-size:10px;color:var(--tx3);transition:transform .15s;width:10px;flex:0 0 auto}
+.grp-h.cl .arw{transform:rotate(-90deg)}
+.grp-h .nm{font-weight:600;font-size:13.5px;font-family:ui-monospace,Consolas,monospace}
+.grp-h .to{font-size:12px;color:var(--tx3)}
+.grp-h .cnt{margin-left:auto;font-size:12.5px;color:var(--tx2);font-variant-numeric:tabular-nums;
+  display:flex;align-items:center;gap:9px}
+.mini{width:80px;height:5px;background:var(--line);border-radius:3px;overflow:hidden;flex:0 0 auto}
+.mini i{display:block;height:100%;background:var(--ok);width:0;transition:width .25s}
+
+/* ---------- task row ---------- */
+.tk{display:flex;align-items:center;gap:11px;padding:7px 18px 7px 18px;border-top:1px solid #f6f8fb;
+  font-size:13px;position:relative}
+.tk:hover{background:#fafbfd}
+.tk input[type=checkbox]{width:15px;height:15px;cursor:pointer;accent-color:var(--pri);flex:0 0 auto}
+.tk .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tk .nm .t{color:var(--tx2);font-size:12px;margin-right:5px}
+.tk .sz{width:74px;text-align:right;color:var(--tx3);font-size:12px;flex:0 0 auto;
+  font-variant-numeric:tabular-nums}
+.tk .pb{width:130px;height:5px;background:var(--line);border-radius:3px;overflow:hidden;flex:0 0 auto}
+.tk .pb i{display:block;height:100%;width:0;background:var(--pri);transition:width .2s}
+.tk .pct{width:46px;text-align:right;font-size:12px;color:var(--tx2);flex:0 0 auto;
+  font-variant-numeric:tabular-nums}
+.tk .st{width:62px;text-align:right;font-size:12px;flex:0 0 auto}
+.st.wait{color:var(--tx3)} .st.run{color:var(--pri)} .st.ok{color:var(--ok)}
+.st.err{color:var(--err)} .st.skip{color:var(--warn)} .st.pause{color:var(--warn)}
+.tk.done{opacity:.62}
+.tk.fail{background:#fffbfb}
+.grp.cl .tk{display:none}
+
+/* ---------- notice ---------- */
+.notice{margin:0 0 16px;padding:11px 15px;border-radius:8px;font-size:13px;display:flex;gap:9px;
+  align-items:flex-start}
+.notice.err{background:var(--err-bg);border:1px solid #fecaca;color:#991b1b}
+.notice.warn{background:var(--warn-bg);border:1px solid #fde68a;color:#92400e}
+.notice.info{background:var(--pri-bg);border:1px solid #bfdbfe;color:#1e40af}
+.notice b{font-weight:600}
+.notice .x{margin-left:auto;cursor:pointer;opacity:.5;padding:0 4px;font-size:15px;line-height:1}
+.notice .x:hover{opacity:1}
+.notice.hiding{opacity:0;transform:translateY(-8px);transition:opacity .25s,transform .25s}
+
+/* ---------- misc ---------- */
+.muted{color:var(--tx3);font-size:12.5px}
+.mono{font-family:ui-monospace,Consolas,monospace}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid var(--line);
+  border-top-color:var(--pri);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-2px}
+@keyframes sp{to{transform:rotate(360deg)}}
+details.help{margin-top:13px;font-size:12.5px;color:var(--tx2)}
+details.help summary{cursor:pointer;color:var(--pri);user-select:none}
+details.help div{margin-top:8px;padding:11px 14px;background:#f8fafc;border-radius:7px;
+  border:1px solid var(--line2);line-height:1.75}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap hd">
+    <div class="logo">&#8681;</div>
+    <div>
+      <h1>链接批量下载器</h1>
+      <div class="sub">扫描文件夹里的 txt，按文件名自动分目录下载</div>
+    </div>
+    <div id="compat" class="badge">检测中…</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <div id="notices"></div>
+
+  <!-- 步骤 1 -->
+  <div class="card">
+    <div class="card-h">
+      <div class="n" id="n1">1</div>
+      <h2>选择文件夹</h2>
+      <span class="tip">文件夹里放装着下载链接的 txt</span>
+    </div>
+    <div class="card-b">
+      <div class="pathbox">
+        <input id="path" placeholder="尚未选择文件夹 — 点右侧「浏览」按钮" readonly>
+        <button id="btnBrowse">浏览…</button>
+        <button id="btnScan" class="pri">扫描链接</button>
+      </div>
+      <div class="opts">
+        <label><input type="checkbox" id="optSub"> 包含子文件夹里的 txt</label>
+        <label>同名文件 <select id="optDup">
+          <option value="resume">续传（推荐）</option>
+          <option value="skip">跳过</option>
+          <option value="over">重新下载</option>
+        </select></label>
+      </div>
+      <details class="help">
+        <summary>txt 文件支持哪些格式？</summary>
+        <div>
+          <b>格式一：一行一个纯链接</b><br>
+          <span class="mono">https://example.com/a.pdf</span><br>
+          <span class="mono">https://example.com/b.pdf</span><br><br>
+          <b>格式二：序号 + 标题 + 链接</b><br>
+          <span class="mono">1. 产品白皮书 https://example.com/a.pdf</span><br><br>
+          <b>格式三：标题一行、链接一行</b><br>
+          <span class="mono">产品白皮书</span><br>
+          <span class="mono">https://example.com/a.pdf</span><br><br>
+          <b>格式四：Markdown 链接</b><br>
+          <span class="mono">[产品白皮书](https://example.com/a.pdf)</span><br><br>
+          会自动去重、自动推断扩展名；链接里有空格也能正确识别。
+        </div>
+      </details>
+    </div>
+  </div>
+
+  <!-- 步骤 2 -->
+  <div class="card" id="card2" style="display:none">
+    <div class="card-h">
+      <div class="n" id="n2">2</div>
+      <h2>下载列表</h2>
+      <span class="tip" id="tip2"></span>
+      <div class="right">
+        <button class="sm" id="btnSelAll">全选</button>
+        <button class="sm" id="btnSelNone">全不选</button>
+        <button class="sm" id="btnSelFail">只选失败</button>
+      </div>
+    </div>
+
+    <div class="bar">
+      <button class="ok" id="btnStart">开始下载</button>
+      <button id="btnPause" disabled>暂停</button>
+      <button class="dan" id="btnStop" disabled>停止</button>
+      <div class="sep"></div>
+      <label>并发 <select id="optConc">
+        <option>1</option><option>2</option><option selected>4</option>
+        <option>6</option><option>8</option><option>12</option>
+      </select></label>
+      <div class="grow"></div>
+      <button class="sm" id="btnExpTxt">导出 TXT</button>
+      <button class="sm" id="btnExpXlsx">导出 Excel</button>
+    </div>
+
+    <div class="sum">
+      <div><div class="v" id="sTotal">0</div><div class="k">链接总数</div></div>
+      <div><div class="v c-ok" id="sDone">0</div><div class="k">已完成</div></div>
+      <div><div class="v c-err" id="sFail">0</div><div class="k">失败</div></div>
+      <div><div class="v" id="sSize">0 B</div><div class="k">已下载</div></div>
+      <div><div class="v c-pri" id="sSpeed">—</div><div class="k">速度</div></div>
+      <div><div class="v" id="sEta">—</div><div class="k">剩余</div></div>
+    </div>
+    <div class="gp"><i id="gpBar"></i></div>
+
+    <div id="list"></div>
+  </div>
+
+  <div class="card" id="cardEmpty">
+    <div class="empty">
+      <div class="ic">&#128193;</div>
+      <p>还没有扫描任何文件夹</p>
+      <div class="hint">点上面的「浏览…」选择一个装着 txt 清单的文件夹，然后点「扫描链接」</div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+'use strict';
+
+/* ============================================================
+   0. 环境检测
+   ============================================================ */
+var FS_OK = typeof window.showDirectoryPicker === 'function';
+(function(){
+  var el = document.getElementById('compat');
+  if(FS_OK){
+    var isCh = /Chrome|Chromium|Edg/.test(navigator.userAgent);
+    el.textContent = isCh ? '浏览器兼容 ✓' : '可用（建议用 Chrome / Edge）';
+  }else{
+    el.textContent = '浏览器不兼容';
+    el.className = 'badge bad';
+    notice('err','<b>当前浏览器不支持本地文件夹读写。</b>请用 <b>Chrome</b> 或 <b>Edge</b>（版本 86+）打开本文件。Firefox / Safari 无法使用本工具。');
+  }
+})();
+
+function notice(kind, html){
+  var box = document.getElementById('notices');
+  // 同一区域只留最新一条：避免通知堆叠把页面挤出屏幕
+  while(box.children.length >= 1) box.removeChild(box.firstChild);
+  var d = document.createElement('div');
+  d.className = 'notice ' + kind;
+  d.innerHTML = '<span>'+html+'</span><span class="x">&times;</span>';
+  d.querySelector('.x').onclick = function(){ d.remove(); };
+  box.appendChild(d);
+  // info/warn 自动消失，err 留到用户关闭
+  if(kind !== 'err') setTimeout(function(){
+    if(d.parentNode === box) d.classList.add('hiding');
+    setTimeout(function(){ d.parentNode === box && d.remove(); }, 300);
+  }, 3500);
+}
+
+/* ============================================================
+   1. 工具函数
+   ============================================================ */
+function $(id){ return document.getElementById(id); }
+function esc(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+function fmtSize(n){
+  if(!n) return '0 B';
+  var u = ['B','KB','MB','GB','TB'], i = Math.floor(Math.log(n)/Math.log(1024));
+  i = Math.min(i, u.length-1);
+  return (n/Math.pow(1024,i)).toFixed(i===0?0:(i===1?0:1)) + ' ' + u[i];
+}
+function fmtSpeed(bps){
+  if(!bps) return '—';
+  return fmtSize(bps) + '/s';
+}
+function fmtEta(sec){
+  if(!isFinite(sec) || sec < 0) return '—';
+  if(sec < 60) return Math.ceil(sec) + ' 秒';
+  if(sec < 3600) return Math.floor(sec/60) + ':' + ('0'+Math.ceil(sec%60)).slice(-2);
+  return Math.floor(sec/3600) + ':' + ('0'+Math.floor(sec%3600/60)).slice(-2) + ':' + ('0'+Math.ceil(sec%60)).slice(-2);
+}
+function safeName(s){
+  return String(s).replace(/[\\\/:*?"<>|\r\n\t]/g,'_').replace(/\s+/g,' ').trim().slice(0,150);
+}
+var MIME_EXT = {
+  'application/pdf':'.pdf','video/mp4':'.mp4','image/jpeg':'.jpg','image/png':'.png',
+  'image/gif':'.gif','image/webp':'.webp','application/zip':'.zip','application/x-zip-compressed':'.zip',
+  'application/msword':'.doc','application/vnd.openxmlformats-officedocument.wordprocessingml.document':'.docx',
+  'application/vnd.ms-excel':'.xls','application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':'.xlsx',
+  'application/vnd.ms-powerpoint':'.ppt','application/vnd.openxmlformats-officedocument.presentationml.presentation':'.pptx',
+  'text/plain':'.txt','text/html':'.html','application/json':'.json','application/x-rar-compressed':'.rar',
+  'application/x-7z-compressed':'.7z','audio/mpeg':'.mp3','video/x-msvideo':'.avi','video/quicktime':'.mov'
+};
+function extFromMime(ct){
+  if(!ct) return '';
+  ct = ct.split(';')[0].trim().toLowerCase();
+  return MIME_EXT[ct] || '';
+}
+
+/* ============================================================
+   2. 解析 txt
+   ============================================================ */
+var ORD_RE = /^\s*(?:\d+\s*[.、)）]\s*|[-*•·]\s*|\[\d+\]\s*|\(\d+\)\s*)?/;
+
+function stripOrdinal(s){
+  return s.replace(ORD_RE,'').replace(/^[\s:：\-—]+|[\s:：\-—]+$/g,'').trim();
+}
+
+// 关键：URL 从 http 一路取到行尾，绝不能在空格处截断（带空格的中文名否则全 404）
+function extractUrl(line){
+  var i = line.search(/https?:\/\//i);
+  if(i < 0) return null;
+  var url = line.slice(i).trim();
+  // 去掉尾部可能残留的闭合符号
+  url = url.replace(/[)"'）】>」』\]]+$/,'');
+  if(/[)\]】]$/.test(url) && (url.split('(').length < url.split(')').length)) url = url.slice(0,-1);
+  return url;
+}
+
+function parseTxt(text){
+  var out = [], seen = Object.create(null), lastTitle = '';
+  var lines = text.split(/\r?\n/);
+  for(var k=0;k<lines.length;k++){
+    var line = lines[k].trim();
+    if(!line) { continue; }
+    var url = extractUrl(line);
+    if(!url){
+      // 非链接行：当作标题候选（排除明显的分隔线/页码）
+      if(!/^[-=_*#·]{3,}$/.test(line) && !/^第?\s*\d+\s*页/.test(line)) lastTitle = stripOrdinal(line);
+      continue;
+    }
+    var pre = line.slice(0, line.search(/https?:\/\//i)).trim();
+    var title = '';
+    if(pre){
+      // markdown: [标题](
+      var mm = pre.match(/\[([^\]]*)\]\s*\(?\s*$/);
+      title = mm ? mm[1].trim() : stripOrdinal(pre);
+    }
+    if(!title) title = lastTitle;
+    lastTitle = '';
+
+    var key = url.toLowerCase();
+    if(seen[key]) continue;
+    seen[key] = 1;
+    out.push({ url:url, title:title });
+  }
+  return out;
+}
+
+function urlBaseName(url){
+  try{
+    var p = new URL(url).pathname;
+    var b = p.split('/').pop() || '';
+    try{ b = decodeURIComponent(b); }catch(e){}
+    return b;
+  }catch(e){
+    var m = url.split('?')[0].split('/').pop();
+    try{ return decodeURIComponent(m); }catch(e2){ return m; }
+  }
+}
+
+// 先用 URL 推断名字；真正的扩展名在拿到 Content-Type 后修正（见 downloadTask）
+function guessName(item){
+  var base = urlBaseName(item.url);
+  var ext = (base.match(/\.[A-Za-z0-9]{1,8}$/) || [''])[0];
+  if(item.title){
+    var t = safeName(item.title);
+    if(t){
+      if(/\.[A-Za-z0-9]{1,8}$/.test(t)) return t;
+      return t + (ext || '.download');
+    }
+  }
+  return base ? safeName(base) : ('file_' + Math.random().toString(36).slice(2,8));
+}
+
+/* ============================================================
+   3. 状态
+   ============================================================ */
+var S = {
+  rootHandle:null, rootPath:'',
+  groups:[],            // {name, path, dirHandle, outName, tasks:[], collapsed}
+  running:false, paused:false, abort:null,
+  bytes:0, startedAt:0, lastBytes:0, lastTs:0, speed:0
+};
+var TASKS = [];         // 扁平数组，便于并发调度
+window.TASKS = TASKS;   // 测试用
+
+function resetStats(){
+  S.bytes = 0; S.startedAt = 0; S.lastBytes = 0; S.lastTs = 0; S.speed = 0;
+}
+
+/* ============================================================
+   4. 选文件夹 + 扫描
+   ============================================================ */
+$('btnBrowse').onclick = async function(){
+  if(!FS_OK){ notice('err','浏览器不支持，请改用 Chrome / Edge。'); return; }
+  try{
+    var h = await window.showDirectoryPicker({ id:'dl-root', mode:'readwrite' });
+    S.rootHandle = h;
+    S.rootPath = h.name;
+    $('path').value = h.name + '\\';
+    $('n1').classList.add('off');
+    autoScanIfRestored();
+  }catch(e){
+    if(e.name !== 'AbortError') notice('err','选择文件夹失败：' + esc(e.message));
+  }
+};
+
+// 尝试恢复上次授权的目录（同一浏览器、同一文件路径）
+async function autoScanIfRestored(){
+  if(!S.rootHandle) return;
+  try{
+    var perm = await S.rootHandle.queryPermission({mode:'readwrite'});
+    if(perm === 'granted') scan();
+  }catch(e){}
+}
+
+$('btnScan').onclick = function(){
+  if(!S.rootHandle){ notice('warn','请先点「浏览…」选择文件夹。'); return; }
+  scan();
+};
+
+async function scan(){
+  if(S.running){ notice('warn','正在下载中，请先停止。'); return; }
+  var btn = $('btnScan');
+  btn.disabled = true; btn.textContent = '扫描中…';
+  try{
+    var perm = await S.rootHandle.requestPermission({mode:'readwrite'});
+    if(perm !== 'granted'){ notice('err','没有文件夹访问权限。'); return; }
+
+    var recursive = $('optSub').checked;
+    var groups = [];
+    await walk(S.rootHandle, '', recursive, groups);
+
+    S.groups = groups;
+    TASKS = [];
+    groups.forEach(function(g){
+      g.tasks.forEach(function(t){ TASKS.push(t); });
+    });
+    resetStats();
+    render();
+    if(!groups.length){
+      notice('warn','没找到任何 txt 文件。' + (recursive?'':'试试勾选「包含子文件夹」。'));
+    }else{
+      notice('info','扫描完成：'+groups.length+' 个 txt 文件，共 '+TASKS.length+' 条链接。');
+    }
+  }catch(e){
+    notice('err','扫描出错：' + esc(e.message));
+  }finally{
+    btn.disabled = false; btn.textContent = '扫描链接';
+  }
+}
+
+async function walk(dirHandle, prefix, recursive, groups){
+  var txts = [], subs = [];
+  for await (var [name, h] of dirHandle.entries()){
+    if(h.kind === 'file'){
+      if(/\.txt$/i.test(name)) txts.push([name, h]);
+    }else if(h.kind === 'directory'){
+      if(name.charAt(0) === '.') continue;
+      subs.push([name, h]);
+    }
+  }
+  txts.sort(function(a,b){ return a[0].localeCompare(b[0],'zh'); });
+
+  for(var i=0;i<txts.length;i++){
+    var nm = txts[i][0], fh = txts[i][1];
+    var text = await (await fh.getFile()).text();
+    var items = parseTxt(text);
+    if(!items.length) continue;
+    var used = Object.create(null);
+    var tasks = items.map(function(it, idx){
+      var fn = dedup(guessName(it), used);
+      return {
+        id: 't' + (TASKS.length + idx) + '_' + Math.random().toString(36).slice(2,7),
+        title: it.title || '', url: it.url, filename: fn,
+        total:0, loaded:0, status:'wait', err:'', sel:true, el:null, group:null
+      };
+    });
+    var g = {
+      name: nm,
+      path: prefix ? prefix + '\\' + nm : nm,
+      dirHandle: dirHandle,
+      outName: nm.replace(/\.txt$/i,''),
+      tasks: tasks,
+      collapsed: false
+    };
+    tasks.forEach(function(t){ t.group = g; });
+    groups.push(g);
+  }
+
+  if(recursive){
+    for(var j=0;j<subs.length;j++){
+      try{ await walk(subs[j][1], prefix ? prefix+'\\'+subs[j][0] : subs[j][0], recursive, groups); }
+      catch(e){}
+    }
+  }
+}
+
+function dedup(name, used){
+  if(!used[name]){ used[name] = 1; return name; }
+  var dot = name.lastIndexOf('.');
+  var stem = dot > 0 ? name.slice(0,dot) : name;
+  var ext  = dot > 0 ? name.slice(dot) : '';
+  var i = 2;
+  while(used[stem + ' (' + i + ')' + ext]) i++;
+  var n = stem + ' (' + i + ')' + ext;
+  used[n] = 1;
+  return n;
+}
+
+/* ============================================================
+   5. 渲染
+   ============================================================ */
+function render(){
+  var has = S.groups.length > 0;
+  $('card2').style.display = has ? '' : 'none';
+  $('cardEmpty').style.display = has ? 'none' : '';
+  if(!has) return;
+
+  var totalFiles = S.groups.length, totalLinks = TASKS.length;
+  $('tip2').textContent = totalFiles + ' 个文件 · ' + totalLinks + ' 条链接';
+  $('n2').classList.add('off');
+
+  var box = $('list');
+  box.innerHTML = '';
+  S.groups.forEach(function(g, gi){
+    var d = document.createElement('div');
+    d.className = 'grp';
+    d.innerHTML =
+      '<div class="grp-h" data-gi="'+gi+'">' +
+        '<span class="arw">&#9660;</span>' +
+        '<span class="nm">'+esc(g.name)+'</span>' +
+        '<span class="to">→ '+esc(g.outName)+'\\</span>' +
+        '<span class="cnt"><span class="mini"><i></i></span><span class="ct">0/'+g.tasks.length+'</span></span>' +
+      '</div>';
+    g.el = d;
+    g.hd = d.querySelector('.grp-h');
+    g.mini = d.querySelector('.mini i');
+    g.ct = d.querySelector('.ct');
+    g.hd.onclick = function(){
+      g.collapsed = !g.collapsed;
+      g.hd.classList.toggle('cl', g.collapsed);
+    };
+    g.tasks.forEach(function(t, ti){
+      var r = document.createElement('div');
+      r.className = 'tk';
+      r.innerHTML =
+        '<input type="checkbox" checked>' +
+        '<span class="nm">'+(t.title ? '<span class="t">'+esc(t.title.slice(0,40))+'</span>' : '')+esc(t.filename)+'</span>' +
+        '<span class="sz"></span>' +
+        '<span class="pb"><i></i></span>' +
+        '<span class="pct"></span>' +
+        '<span class="st wait">等待</span>';
+      var cb = r.querySelector('input');
+      cb.onchange = function(){ t.sel = cb.checked; };
+      t.el = r; t.elSz = r.querySelector('.sz'); t.elBar = r.querySelector('.pb i');
+      t.elPct = r.querySelector('.pct'); t.elSt = r.querySelector('.st'); t.cb = cb;
+      d.appendChild(r);
+    });
+    box.appendChild(d);
+  });
+  updateSummary();
+}
+
+var ST_TEXT = {wait:'等待', run:'下载中', ok:'完成', fail:'失败', skip:'跳过', pause:'已暂停'};
+
+function paintTask(t){
+  if(!t.el) return;
+  var st = t.status;
+  t.el.className = 'tk' + (st==='ok'||st==='skip' ? ' done' : '') + (st==='fail' ? ' fail' : '');
+  var pct = st === 'ok' || st === 'skip' ? 100
+          : (t.total ? Math.min(99, Math.floor(t.loaded*100/t.total)) : 0);
+  t.elBar.style.width = pct + '%';
+  if(st === 'ok' || st === 'skip') t.elBar.style.background = 'var(--ok)';
+  else if(st === 'fail') t.elBar.style.background = 'var(--err)';
+  else t.elBar.style.background = 'var(--pri)';
+  t.elPct.textContent = (t.total||t.loaded) ? (st==='ok'||st==='skip' ? '100%' : pct+'%') : '';
+  t.elSz.textContent = t.total ? fmtSize(t.total) : (t.loaded ? fmtSize(t.loaded) : '');
+  t.elSt.className = 'st ' + st;
+  t.elSt.textContent = st === 'fail' ? '失败' : (ST_TEXT[st] || '');
+  if(st === 'fail' && t.err) t.elSt.title = t.err;
+}
+
+function paintGroup(g){
+  var done = 0, fail = 0;
+  g.tasks.forEach(function(t){ if(t.status==='ok'||t.status==='skip') done++; else if(t.status==='fail') fail++; });
+  if(g.mini) g.mini.style.width = (done*100/Math.max(g.tasks.length,1)) + '%';
+  if(g.ct) g.ct.textContent = done + '/' + g.tasks.length + (fail ? '（失败'+fail+'）' : '');
+}
+
+var lastPaint = 0;
+function updateSummary(force){
+  var ok=0, fail=0, run=0, sel=0;
+  for(var i=0;i<TASKS.length;i++){
+    var t = TASKS[i];
+    if(t.status==='ok'||t.status==='skip') ok++;
+    else if(t.status==='fail') fail++;
+    else if(t.status==='run') run++;
+    if(t.sel) sel++;
+  }
+  $('sTotal').textContent = TASKS.length;
+  $('sDone').textContent = ok;
+  $('sFail').textContent = fail;
+  $('sSize').textContent = fmtSize(S.bytes);
+  $('sSpeed').textContent = S.running && !S.paused ? fmtSpeed(S.speed) : '—';
+
+  var now = Date.now();
+  if(force || now - lastPaint > 220){
+    lastPaint = now;
+    var doneAll = 0;
+    S.groups.forEach(function(g){ paintGroup(g); doneAll += g.tasks.filter(function(t){return t.status==='ok'||t.status==='skip';}).length; });
+    $('gpBar').style.width = (doneAll*100/Math.max(TASKS.length,1)) + '%';
+    var remain = S.speed > 0 ? (TASKS.length - doneAll) * (S.bytes/Math.max(doneAll,1)) / S.speed : NaN;
+    $('sEta').textContent = (S.running && !S.paused && S.speed > 0) ? fmtEta(remain) : '—';
+  }
+
+  $('btnStart').disabled = S.running || sel===0;
+  $('btnStart').textContent = S.running ? (S.paused ? '已暂停' : '下载中…') : '开始下载';
+  $('btnPause').disabled = !S.running;
+  $('btnPause').textContent = S.paused ? '继续' : '暂停';
+  $('btnStop').disabled = !S.running && !TASKS.some(function(t){return t.status==='run'||t.status==='pause';});
+}
+
+/* ============================================================
+   6. 下载引擎
+   ============================================================ */
+function sleep(ms){ return new Promise(function(r){ setTimeout(r, ms); }); }
+async function waitResume(){
+  while(S.paused && !S.stopAll) await sleep(120);
+}
+
+async function ensureOutDir(g){
+  if(g.outHandle) return g.outHandle;
+  g.outHandle = await g.dirHandle.getDirectoryHandle(g.outName, {create:true});
+  return g.outHandle;
+}
+
+async function downloadTask(t){
+  var g = t.group;
+  var outDir = await ensureOutDir(g);
+  var dupMode = $('optDup').value;
+  var name = t.filename;
+
+  var existHandle = null, existSize = 0;
+  try{
+    existHandle = await outDir.getFileHandle(name);
+    existSize = (await existHandle.getFile()).size;
+  }catch(e){ existHandle = null; existSize = 0; }
+
+  // 无扩展名 → 先探一次拿到 Content-Type 决定扩展名
+  if(!/\.[A-Za-z0-9]{1,8}$/.test(name)){
+    try{
+      var pr = await fetch(t.url, {method:'GET', headers:{'Range':'bytes=0-1023'}});
+      var ext = extFromMime(pr.headers.get('content-type'));
+      pr.body && pr.body.cancel && pr.body.cancel().catch(function(){});
+      if(ext){
+        name = name.replace(/\.download$/,'') + ext;
+        t.filename = name;
+        var h2 = null, s2 = 0;
+        try{ h2 = await outDir.getFileHandle(name); s2 = (await h2.getFile()).size; }catch(e){}
+        existHandle = h2; existSize = s2;
+      }
+    }catch(e){}
+  }
+
+  // 模式1：跳过一切已存在的文件（不管完不完整）
+  if(dupMode === 'skip' && existSize > 0){
+    t.status = 'skip'; t.loaded = existSize; t.total = existSize;
+    paintTask(t); return 'skip';
+  }
+
+  // 模式2（默认）续传：不能用 Content-Range 判断是否已完整 —— 它不在 CORS 默认暴露头里，
+  // 浏览器 JS 读到的是 null。改用「发 Range 请求看返回 200 还是 206」来判定：
+  //   pos == 远端总大小 → 200 + Content-Length == existSize  → 已完整，跳过
+  //   pos <  远端总大小 → 206                                → 正常续传
+  //   pos >  远端总大小 → 200 + Content-Length != existSize  → 文件异常，从头下
+  // Content-Length 是 CORS 安全头，可正常读取。
+  var pos = (dupMode === 'resume' && existSize > 0) ? existSize : 0;
+  var headers = {};
+  if(pos > 0) headers['Range'] = 'bytes=' + pos + '-';
+
+  var res, retried = 0, maxRetry = 3;
+  while(true){
+    var ctl = new AbortController();
+    var tid = setTimeout(function(){ try{ ctl.abort(); }catch(e){} }, 60000);
+    try{
+      res = await fetch(t.url, {headers:headers, signal:ctl.signal});
+      clearTimeout(tid);
+      break;
+    }catch(e){
+      clearTimeout(tid);
+      if(S.stopAll) return 'stop';
+      if(++retried > maxRetry) throw new Error('重试 3 次仍失败：' + (e.message || e));
+      await sleep(800 * retried);
+    }
+  }
+  if(res.status === 416 && pos > 0){ t.status='skip'; paintTask(t); return 'skip'; }
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+
+  var cl = parseInt(res.headers.get('content-length') || '0', 10);
+  var partial = (res.status === 206);
+
+  if(pos > 0 && !partial){
+    // 服务器没给 206：要么不支持 Range，要么字节已下满
+    if(cl && cl === existSize){
+      // 已完整 —— 直接跳过，绝不重写文件（否则 mtime 会被白白改动）
+      try{ res.body && res.body.cancel && res.body.cancel(); }catch(e){}
+      t.status='skip'; t.loaded=existSize; t.total=existSize;
+      paintTask(t); return 'skip';
+    }
+    pos = 0;   // 不支持 Range 或本地文件异常 → 从头下
+  }
+  var total = partial ? cl + pos : cl;
+
+  // 无扩展名且前面没探到 → 现在用 Content-Type 补
+  if(!/\.[A-Za-z0-9]{1,8}$/.test(name)){
+    var ext2 = extFromMime(res.headers.get('content-type'));
+    if(ext2){ name = name.replace(/\.download$/,'') + ext2; t.filename = name; }
+  }
+
+  t.total = total; t.loaded = pos; t.status = 'run';
+  paintTask(t);
+
+  var fh = await outDir.getFileHandle(name, {create:true});
+  var w = await fh.createWritable({keepExistingData: pos > 0});
+  try{
+    if(pos > 0){ await w.truncate(pos); await w.seek(pos); }
+    else { await w.truncate(0); }
+  }catch(e){ try{ await w.seek(pos); }catch(e2){} }
+
+  var reader = res.body.getReader();
+  var lastUi = 0;
+  try{
+    while(true){
+      if(S.stopAll){ throw {__stop:1}; }
+      await waitResume();
+      var rd = await Promise.race([
+        reader.read(),
+        new Promise(function(_, rej){ setTimeout(function(){ rej(new Error('read timeout 30s')); }, 30000); })
+      ]);
+      if(rd.done) break;
+      await w.write(rd.value);
+      t.loaded += rd.value.length;
+      S.bytes += rd.value.length;
+      var now2 = Date.now();
+      if(now2 - lastUi > 180){ lastUi = now2; paintTask(t); }
+    }
+    await w.close();
+  }catch(e){
+    try{ w && await w.abort(); }catch(e2){ try{ w && await w.close(); }catch(e3){} }
+    if(e && e.__stop){ t.status = 'pause'; paintTask(t); return 'stop'; }
+    throw e;
+  }
+
+  if(total && t.loaded !== total) throw new Error('大小不符 ' + t.loaded + '/' + total);
+  t.status = 'ok'; paintTask(t);
+  return 'ok';
+}
+
+$('btnStart').onclick = function(){
+  // 把所有被勾选的任务都纳入：未完成的会真正下载；已完成的会走存在性检查并显示"跳过"，
+  // 这样用户能直观看到"全部跳过"，也顺便验证文件完整性。
+  window.btnStart = $('btnStart');
+  var list = TASKS.filter(function(t){ return t.sel; });
+  if(!list.length){ notice('warn','请先勾选任务。'); return; }
+  var pending = list.filter(function(t){ return t.status!=='ok' && t.status!=='skip'; });
+  if(!pending.length){
+    notice('info','所选任务都已完成，正在重新检查 '+list.length+' 个文件…');
+  }
+  startRun(list);
+};
+
+async function startRun(list){
+  S.running = true; S.paused = false; S.stopAll = false;
+  S.abort = new AbortController();
+  S.startedAt = Date.now(); S.lastBytes = S.bytes; S.lastTs = Date.now();
+  list.forEach(function(t){ if(t.status !== 'ok'){ t.status='wait'; t.loaded=0; t.err=''; paintTask(t); } });
+  updateSummary(true);
+
+  var conc = parseInt($('optConc').value, 10) || 4;
+  var idx = 0, doneN = 0;
+
+  var tick = setInterval(function(){
+    var now = Date.now(), dt = (now - S.lastTs)/1000;
+    var instant = dt > 0 ? (S.bytes - S.lastBytes)/dt : 0;
+    // EMA 平滑：避免网络 chunk 间隔 > 400ms 时速度反复归 0
+    S.speed = S.speed ? S.speed * 0.7 + instant * 0.3 : instant;
+    S.lastBytes = S.bytes; S.lastTs = now;
+    updateSummary();
+  }, 400);
+
+  async function worker(){
+    while(true){
+      if(S.stopAll) return;
+      var i = idx++;
+      if(i >= list.length) return;
+      var t = list[i];
+      await waitResume();
+      if(S.stopAll) return;
+      try{
+        await downloadTask(t);
+      }catch(e){
+        if(e && e.name === 'AbortError' || S.stopAll){
+          t.status = 'pause';
+        }else{
+          t.status = 'fail';
+          t.err = (e && e.message) ? e.message : String(e);
+        }
+        paintTask(t);
+      }
+      doneN++;
+      updateSummary(true);
+    }
+  }
+
+  var ws = [];
+  for(var i=0;i<Math.min(conc, list.length);i++) ws.push(worker());
+  await Promise.all(ws);
+  clearInterval(tick);
+
+  S.running = false; S.paused = false;
+  var fail = list.filter(function(t){ return t.status==='fail'; }).length;
+  var ok = list.filter(function(t){ return t.status==='ok'||t.status==='skip'; }).length;
+  updateSummary(true);
+  $('gpBar').style.width = '100%';
+  if(S.stopAll){
+    notice('info','已停止。已下载 '+ok+' 个'+(fail?'，失败 '+fail+' 个':'')+'。再点「开始下载」会接着下。');
+  }else{
+    notice(fail ? 'warn' : 'info','本轮结束：成功 '+ok+' 个，失败 '+fail+' 个，共 '+fmtSize(S.bytes)+'。');
+  }
+  S.stopAll = false;
+}
+
+$('btnPause').onclick = function(){
+  S.paused = !S.paused;
+  updateSummary(true);
+  if(S.paused) notice('info','已暂停（正在传输的文件会先落盘）。点「继续」恢复。');
+};
+
+$('btnStop').onclick = function(){
+  if(!S.running) return;
+  S.stopAll = true; S.paused = false;
+  try{ S.abort && S.abort.abort(); }catch(e){}
+  updateSummary(true);
+};
+
+/* 全选 / 全不选 / 只选失败 */
+$('btnSelAll').onclick = function(){ setSel(function(){ return true; }); };
+$('btnSelNone').onclick = function(){ setSel(function(){ return false; }); };
+$('btnSelFail').onclick = function(){ setSel(function(t){ return t.status==='fail'||t.status==='pause'||t.status==='wait'; }); };
+function setSel(fn){
+  TASKS.forEach(function(t){ t.sel = fn(t); if(t.cb) t.cb.checked = t.sel; });
+  updateSummary(true);
+}
+
+/* ============================================================
+   7. 导出
+   ============================================================ */
+function saveBlob(blob, name){
+  var a = document.createElement('a');
+  var u = URL.createObjectURL(blob);
+  a.href = u; a.download = name;
+  document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); }, 400);
+}
+
+$('btnExpTxt').onclick = function(){
+  var lines = [];
+  S.groups.forEach(function(g){
+    lines.push('# ' + g.path + '  →  ' + g.outName + '\\');
+    g.tasks.forEach(function(t){
+      lines.push((t.title ? t.title + '\t' : '') + t.url);
+    });
+    lines.push('');
+  });
+  var blob = new Blob(['\ufeff' + lines.join('\r\n')], {type:'text/plain;charset=utf-8'});
+  saveBlob(blob, '下载链接清单.txt');
+  notice('info','已导出 下载链接清单.txt（共 '+TASKS.length+' 条）');
+};
+
+/* ---- 极简 xlsx：手写 ZIP（deflate-raw）+ OOXML ---- */
+var CRC_T = (function(){
+  var t = new Uint32Array(256);
+  for(var n=0;n<256;n++){
+    var c = n;
+    for(var k=0;k<8;k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+function crc32(buf){
+  var c = 0xFFFFFFFF;
+  for(var i=0;i<buf.length;i++) c = CRC_T[(c ^ buf[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+async function deflateRaw(u8){
+  if(typeof CompressionStream === 'undefined') return null;
+  var cs = new CompressionStream('deflate-raw');
+  var w = cs.writable.getWriter();
+  w.write(u8); w.close();
+  return new Uint8Array(await new Response(cs.readable).arrayBuffer());
+}
+function u16(v){ return [v & 255, (v>>8)&255]; }
+function u32(v){ return [v&255,(v>>8)&255,(v>>16)&255,(v>>>24)&255]; }
+function dosTime(d){
+  return [ ((d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()/2|0)) & 255,
+           (((d.getHours()<<11)|(d.getMinutes()<<5)|(d.getSeconds()/2|0))>>8) & 255 ];
+}
+function dosDate(d){
+  var v = ((d.getFullYear()-1980)<<9)|((d.getMonth()+1)<<5)|d.getDate();
+  return [v&255,(v>>8)&255];
+}
+
+async function makeZip(files){
+  var now = new Date(), tm = dosTime(now), dt = dosDate(now);
+  var parts = [], central = [], offset = 0;
+  for(var i=0;i<files.length;i++){
+    var f = files[i];
+    var nameBytes = new TextEncoder().encode(f.name);
+    var raw = f.data;
+    var comp = await deflateRaw(raw);
+    var useDeflate = comp && comp.length < raw.length;
+    var data = useDeflate ? comp : raw;
+    var crc = crc32(raw), method = useDeflate ? 8 : 0;
+
+    var lh = new Uint8Array([0x50,0x4B,0x03,0x04, 0x14,0x00, 0x00,0x08,
+      method&255, (method>>8)&255, tm[0],tm[1], dt[0],dt[1]]);
+    lh = concat([lh, new Uint8Array(u32(crc)), new Uint8Array(u32(data.length)),
+                 new Uint8Array(u32(raw.length)), new Uint8Array(u16(nameBytes.length)),
+                 new Uint8Array([0,0]), nameBytes, data]);
+    parts.push(lh);
+
+    var ch = new Uint8Array([0x50,0x4B,0x01,0x02, 0x14,0x00, 0x14,0x00, 0x00,0x08,
+      method&255,(method>>8)&255, tm[0],tm[1], dt[0],dt[1]]);
+    ch = concat([ch, new Uint8Array(u32(crc)), new Uint8Array(u32(data.length)),
+                 new Uint8Array(u32(raw.length)), new Uint8Array(u16(nameBytes.length)),
+                 new Uint8Array([0,0,0,0,0,0,0,0]),
+                 new Uint8Array(u32(0)), new Uint8Array(u32(offset)),
+                 nameBytes]);
+    central.push(ch);
+    offset += lh.length;
+  }
+  var cdStart = offset;
+  var cd = concat(central);
+  var eocd = new Uint8Array([0x50,0x4B,0x05,0x06, 0,0, 0,0]);
+  eocd = concat([eocd, new Uint8Array(u16(files.length)), new Uint8Array(u16(files.length)),
+                 new Uint8Array(u32(cd.length)), new Uint8Array(u32(cdStart)), new Uint8Array([0,0])]);
+  return new Blob([concat(parts), cd, eocd], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+function concat(arrs){
+  var n = 0; arrs.forEach(function(a){ n += a.length; });
+  var out = new Uint8Array(n), p = 0;
+  arrs.forEach(function(a){ out.set(a, p); p += a.length; });
+  return out;
+}
+
+function xmlEsc(s){
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&apos;'}[c];
+  }).replace(/[\x00-\x08\x0B\x0C\x0E-\x1F]/g,'');
+}
+function colName(i){
+  var s = ''; i++;
+  while(i>0){ var m=(i-1)%26; s = String.fromCharCode(65+m)+s; i=(i-m-1)/26; }
+  return s;
+}
+
+async function makeXlsx(headers, rows){
+  var enc = new TextEncoder();
+  var xml = ['<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>'];
+  var r1 = '<row r="1">';
+  headers.forEach(function(h, i){
+    r1 += '<c r="'+colName(i)+'1" t="inlineStr"><is><t>'+xmlEsc(h)+'</t></is></c>';
+  });
+  xml.push(r1 + '</row>');
+  rows.forEach(function(row, ri){
+    var rr = ri + 2, s = '<row r="'+rr+'">';
+    row.forEach(function(v, ci){
+      if(typeof v === 'number' && isFinite(v)){
+        s += '<c r="'+colName(ci)+rr+'"><v>'+v+'</v></c>';
+      }else{
+        s += '<c r="'+colName(ci)+rr+'" t="inlineStr"><is><t>'+xmlEsc(v==null?'':v)+'</t></is></c>';
+      }
+    });
+    xml.push(s + '</row>');
+  });
+  xml.push('</sheetData></worksheet>');
+
+  var files = [
+    { name:'[Content_Types].xml', data:enc.encode(
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'+
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'+
+      '<Default Extension="xml" ContentType="application/xml"/>'+
+      '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'+
+      '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'+
+      '</Types>') },
+    { name:'_rels/.rels', data:enc.encode(
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'+
+      '</Relationships>') },
+    { name:'xl/workbook.xml', data:enc.encode(
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '+
+      'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'+
+      '<sheets><sheet name="链接清单" sheetId="1" r:id="rId1"/></sheets></workbook>') },
+    { name:'xl/_rels/workbook.xml.rels', data:enc.encode(
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'+
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'+
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'+
+      '</Relationships>') },
+    { name:'xl/worksheets/sheet1.xml', data:enc.encode(xml.join('')) }
+  ];
+  return makeZip(files);
+}
+
+$('btnExpXlsx').onclick = async function(){
+  if(!TASKS.length){ notice('warn','没有可导出的链接。'); return; }
+  var btn = this; btn.disabled = true; btn.textContent = '生成中…';
+  try{
+    var headers = ['所属txt','输出目录','序号','标题','文件名','大小(字节)','状态','链接'];
+    var rows = [];
+    S.groups.forEach(function(g){
+      g.tasks.forEach(function(t, i){
+        rows.push([g.path, g.outName+'\\', i+1, t.title || '', t.filename,
+                   t.total || 0, ST_TEXT[t.status] || '等待', t.url]);
+      });
+    });
+    var blob = await makeXlsx(headers, rows);
+    saveBlob(blob, '下载链接清单.xlsx');
+    notice('info','已导出 下载链接清单.xlsx（共 '+rows.length+' 行）');
+  }catch(e){
+    notice('err','导出 Excel 失败：' + esc(e.message));
+  }finally{
+    btn.disabled = false; btn.textContent = '导出 Excel';
+  }
+};
+
+/* ============================================================
+   8. 启动
+   ============================================================ */
+if(location.protocol !== 'file:'){
+  notice('info','当前通过 ' + location.protocol + '// 打开，功能正常。直接双击本文件用浏览器打开也可以。');
+}
+updateSummary(true);
+</script>
+</body>
+</html>
