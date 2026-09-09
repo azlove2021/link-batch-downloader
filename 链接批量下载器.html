@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
+<html lang="zh-CN" data-page-node-id="cEtZA8fytVjhDkSDmUAUrZ">
+<head data-page-node-id="bo5feh6bttNxK2HjJsxlSD">
+<meta charset="UTF-8" data-page-node-id="xgpMreFb5F7ILzvpYwrwv3">
+<meta name="viewport" content="width=device-width,initial-scale=1" data-page-node-id="6QXoO3JcAAqARB8HnZG8v3">
 <title>链接批量下载器</title>
 <style>
 :root{
@@ -46,7 +46,9 @@ header{background:var(--card);border-bottom:1px solid var(--line);padding:16px 0
 .card-b{padding:18px}
 
 /* ---------- form ---------- */
-.pathbox{display:flex;gap:10px;align-items:stretch}
+.pathbox{display:flex;gap:10px;align-items:stretch;margin-bottom:10px}
+.pathbox:last-child{margin-bottom:0}
+.pathbox .lbl{flex:0 0 88px;display:flex;align-items:center;font-size:13px;color:var(--tx2);font-weight:500}
 .pathbox input{flex:1;padding:9px 12px;border:1px solid var(--line);border-radius:8px;
   font-size:13px;font-family:ui-monospace,Consolas,monospace;background:#fbfcfe;color:var(--tx);min-width:0}
 .pathbox input:focus{outline:none;border-color:var(--pri);background:#fff}
@@ -130,6 +132,13 @@ button.sm{padding:6px 12px;font-size:12.5px}
 .st.err{color:var(--err)} .st.skip{color:var(--warn)} .st.pause{color:var(--warn)}
 .tk.done{opacity:.62}
 .tk.fail{background:#fffbfb}
+/* 拖拽多选时的高亮状态 */
+.tk.drag-target{background:#eef6ff;outline:1px dashed var(--pri);outline-offset:-1px}
+.tk.drag-target .cb-hint{display:inline-block}
+.tk.drag-skip{background:#fef2f2;outline:1px dashed var(--err);outline-offset:-1px}
+/* 防止拖拽时出现文本选择闪烁 */
+.list-nodrag,.list-nodrag *{-webkit-user-select:none;user-select:none}
+/* 折叠：要给外层 .grp 加 .cl，CSS 一律以 .grp.cl 为准 */
 .grp.cl .tk{display:none}
 
 /* ---------- notice ---------- */
@@ -155,57 +164,67 @@ details.help div{margin-top:8px;padding:11px 14px;background:#f8fafc;border-radi
   border:1px solid var(--line2);line-height:1.75}
 </style>
 </head>
-<body>
+<body data-page-node-id="DlUVkubKRZaV3DUpoDAiya">
 
-<header>
-  <div class="wrap hd">
-    <div class="logo">&#8681;</div>
-    <div>
-      <h1>链接批量下载器</h1>
-      <div class="sub">扫描文件夹里的 txt，按文件名自动分目录下载</div>
+<header data-page-node-id="NOeQZ42O9Y9D73PzDt5CuC">
+  <div class="wrap hd" data-page-node-id="VR7dgcLxRvmWEJfdWCSVea">
+    <div class="logo" data-page-node-id="aL98mE6r6d35VCsJyxVpbO">&#8681;</div>
+    <div data-page-node-id="jHLdktqI8v9EBW9fwAyl9g">
+      <h1 data-page-node-id="R3sGinIt87nnoIR1nyEvKw">链接批量下载器</h1>
+      <div class="sub" data-page-node-id="AANUrzdv354ZKVBeWEkE5G">扫描文件夹里的 txt，按文件名自动分目录下载</div>
     </div>
-    <div id="compat" class="badge">检测中…</div>
+    <div id="compat" class="badge" data-page-node-id="6l5mwfKN0D1w77wkELjoMn">检测中…</div>
   </div>
 </header>
 
-<div class="wrap">
+<div class="wrap" data-page-node-id="bhYMAsHLb4Ns6JhGKDB0Bp">
 
-  <div id="notices"></div>
+  <div id="notices" data-page-node-id="ZVwAXzgyH16sbw7F8yutMT"></div>
 
   <!-- 步骤 1 -->
-  <div class="card">
-    <div class="card-h">
-      <div class="n" id="n1">1</div>
-      <h2>选择文件夹</h2>
-      <span class="tip">文件夹里放装着下载链接的 txt</span>
+  <div class="card" data-page-node-id="UopVp9DRKQACeyKqxoHHDO">
+    <div class="card-h" data-page-node-id="4Vl0L9xeeYBRSKc8BazlPI">
+      <div class="n" id="n1" data-page-node-id="KHcr41PbSBJ1ealRxMJXVq">1</div>
+      <h2 data-page-node-id="0AtCTPfjR0aNNe6WtQPhLy">选择文件夹</h2>
+      <span class="tip" data-page-node-id="P8VtLjDippHwgjLF5dtOfs">文件夹里放装着下载链接的 txt</span>
     </div>
-    <div class="card-b">
-      <div class="pathbox">
-        <input id="path" placeholder="尚未选择文件夹 — 点右侧「浏览」按钮" readonly>
-        <button id="btnBrowse">浏览…</button>
-        <button id="btnScan" class="pri">扫描链接</button>
+    <div class="card-b" data-page-node-id="xuJ5bs4uKBNCC0WFWMJrL6">
+      <div class="pathbox" data-page-node-id="4k3XCQDBGGimtIC3E1CSuq">
+        <span class="lbl" data-page-node-id="L01sBCsIn9jPUWaOMeOShY">源文件夹</span>
+        <input id="path" placeholder="尚未选择文件夹 — 点右侧「浏览」按钮" readonly data-page-node-id="BSCvathq0z5Y2DNjdRtHGf">
+        <button id="btnBrowse" data-page-node-id="GCsFzgn5bfWiLHPl2W3McK">浏览…</button>
       </div>
-      <div class="opts">
-        <label><input type="checkbox" id="optSub"> 包含子文件夹里的 txt</label>
-        <label>同名文件 <select id="optDup">
-          <option value="resume">续传（推荐）</option>
-          <option value="skip">跳过</option>
-          <option value="over">重新下载</option>
+      <div class="pathbox" data-page-node-id="PB00pxBJcRpqM3ON59JcBd">
+        <span class="lbl" data-page-node-id="L02sBCsIn9jPUWaOMeOShY">下载到</span>
+        <input id="pathOut" placeholder="默认 = 源文件夹下自动建子目录" readonly data-page-node-id="PO08bnymN6J5ZFho6MrKya">
+        <button id="btnBrowseOut" data-page-node-id="BRO00pxBJcRpqM3ON59JcBd">浏览…</button>
+        <button id="btnResetOut" class="sm" title="恢复默认（= 源文件夹）" data-page-node-id="BRO00pxBJcRpqM3ON59JcBe">重置</button>
+      </div>
+      <div class="opts" data-page-node-id="Ql9EYNk0Hrgggl8jMpsrUn">
+        <label data-page-node-id="lmCLiGU2hyAWrsFWIHrAC2"><input type="checkbox" id="optSub" data-page-node-id="puPTelhOHSaVcVjBIAt7k9"> 包含子文件夹里的 txt</label>
+        <label data-page-node-id="KU6X3uPeC5ZHRlwKw5m4o8">同名文件 <select id="optDup" data-page-node-id="TEBMmSV8w7ZEO1Q4FNrvCA">
+          <option value="resume" data-page-node-id="mPR7sLJeYftRlVIcabKXJ7">续传（推荐）</option>
+          <option value="skip" data-page-node-id="zh0ykeVsLxak5mz4QwTEIu">跳过</option>
+          <option value="over" data-page-node-id="N3dqmiGOPElTbWutc3w6tI">重新下载</option>
         </select></label>
       </div>
-      <details class="help">
-        <summary>txt 文件支持哪些格式？</summary>
-        <div>
-          <b>格式一：一行一个纯链接</b><br>
-          <span class="mono">https://example.com/a.pdf</span><br>
-          <span class="mono">https://example.com/b.pdf</span><br><br>
-          <b>格式二：序号 + 标题 + 链接</b><br>
-          <span class="mono">1. 产品白皮书 https://example.com/a.pdf</span><br><br>
-          <b>格式三：标题一行、链接一行</b><br>
-          <span class="mono">产品白皮书</span><br>
-          <span class="mono">https://example.com/a.pdf</span><br><br>
-          <b>格式四：Markdown 链接</b><br>
-          <span class="mono">[产品白皮书](https://example.com/a.pdf)</span><br><br>
+      <div style="margin-top:14px" data-page-node-id="AC00pxBJcRpqM3ON59JcBe">
+        <button id="btnScan" class="pri" data-page-node-id="dhdnvrGDucCyHaF08vjyXo">扫描链接</button>
+        <span class="muted" style="margin-left:10px" data-page-node-id="AC00pxBJcRpqM3ON59JcBf">点扫描后，下方会列出所有 txt 里的链接；勾选/拖选要下的，开始下载。</span>
+      </div>
+      <details class="help" data-page-node-id="adiP1C84jFpCldknb6gliL">
+        <summary data-page-node-id="mjCAzv8XqbPGJoiprQirrY">txt 文件支持哪些格式？</summary>
+        <div data-page-node-id="jl1auyqXvW3hswanaMpxKV">
+          <b data-page-node-id="9a6lg4bwlHwMXsFTG99UO9">格式一：一行一个纯链接</b><br data-page-node-id="dCtis8xNTf98tqQ3dSwzAB">
+          <span class="mono" data-page-node-id="nLxyFQI0YitFHPSAbQEEDM">https://example.com/a.pdf</span><br data-page-node-id="s74RzAABNgAdQsJTpZPGZU">
+          <span class="mono" data-page-node-id="bKdA12XCzpsLbMGeRxsyxi">https://example.com/b.pdf</span><br data-page-node-id="itBUQfyIPi6ltbUyRWTSsh"><br data-page-node-id="SukXWbJV0vSFEyV0KhoYPJ">
+          <b data-page-node-id="i6F8PGjbKhHCL77OZ3fXRB">格式二：序号 + 标题 + 链接</b><br data-page-node-id="xDHtPjrD3gtpK0HWhvQXPB">
+          <span class="mono" data-page-node-id="eWsrmpcJE2uQVfRHcraWw3">1. 产品白皮书 https://example.com/a.pdf</span><br data-page-node-id="HVgkSxDAzICT2rqGm6PrTn"><br data-page-node-id="72jMTV4Ce6qdntqiBeLx9a">
+          <b data-page-node-id="FyNU7QYZiYadYMhwOLWpER">格式三：标题一行、链接一行</b><br data-page-node-id="KR5n20fpXOhWhB5hyRO1dN">
+          <span class="mono" data-page-node-id="ZMMHn09nczBGlcfOSq8rfO">产品白皮书</span><br data-page-node-id="zxkNVH0WS408qqQ4CYpaVb">
+          <span class="mono" data-page-node-id="i6sd4WrCLk4DkOKpeBxyfG">https://example.com/a.pdf</span><br data-page-node-id="e4ZrN0b40HTKG0Pj5cUmlV"><br data-page-node-id="y8FLjVukK48PbQ3o88PCf5">
+          <b data-page-node-id="EsaV1tZ36VOYpe9nfYkpCm">格式四：Markdown 链接</b><br data-page-node-id="sO3DdjwCd2n5pDgjPrkIMa">
+          <span class="mono" data-page-node-id="t2zV4lOBw8AvG8yNf47PsO">[产品白皮书](https://example.com/a.pdf)</span><br data-page-node-id="NZMXlIC4oJHkx2vtHrIUw9"><br data-page-node-id="FiYDTujAKTvpLyzyUW8RnE">
           会自动去重、自动推断扩展名；链接里有空格也能正确识别。
         </div>
       </details>
@@ -213,50 +232,53 @@ details.help div{margin-top:8px;padding:11px 14px;background:#f8fafc;border-radi
   </div>
 
   <!-- 步骤 2 -->
-  <div class="card" id="card2" style="display:none">
-    <div class="card-h">
-      <div class="n" id="n2">2</div>
-      <h2>下载列表</h2>
-      <span class="tip" id="tip2"></span>
-      <div class="right">
-        <button class="sm" id="btnSelAll">全选</button>
-        <button class="sm" id="btnSelNone">全不选</button>
-        <button class="sm" id="btnSelFail">只选失败</button>
+  <div class="card" id="card2" style="display:none" data-page-node-id="le6f2UIxGEkhiyUrHfnPHg">
+    <div class="card-h" data-page-node-id="B7pbtge5KUXPW7DoABg1WJ">
+      <div class="n" id="n2" data-page-node-id="jltfZTQguUOctEyLOQoaK5">2</div>
+      <h2 data-page-node-id="zeeKaeoSH4qvRWwm1ULdOp">下载列表</h2>
+      <span class="tip" id="tip2" data-page-node-id="V2pWEHq0uYlmpiR3L4AHm7"></span>
+      <div class="right" data-page-node-id="6YldHWBgCjCSZDnTmCz7Ch">
+        <button class="sm" id="btnSelAll" data-page-node-id="yJMLNXcX7zQ7p5YgyIpAox">全选</button>
+        <button class="sm" id="btnSelNone" data-page-node-id="miEdj5i6sYrQhsTqAQseHw">全不选</button>
+        <button class="sm" id="btnSelInvert" title="把当前选中的取消勾选，未选的勾上" data-page-node-id="INV00pxBJcRpqM3ON59JcBd">反选</button>
+        <button class="sm" id="btnSelFail" data-page-node-id="VZEK0sSoPF8uKL1vhVxWXS">只选失败</button>
+        <span class="muted" id="selCnt" style="margin-left:4px;font-variant-numeric:tabular-nums" data-page-node-id="SC00pxBJcRpqM3ON59JcBd">已选 0</span>
       </div>
     </div>
 
-    <div class="bar">
-      <button class="ok" id="btnStart">开始下载</button>
-      <button id="btnPause" disabled>暂停</button>
-      <button class="dan" id="btnStop" disabled>停止</button>
-      <div class="sep"></div>
-      <label>并发 <select id="optConc">
-        <option>1</option><option>2</option><option selected>4</option>
-        <option>6</option><option>8</option><option>12</option>
+    <div class="bar" data-page-node-id="zAbd52qMMwOclr6hC6VsdP">
+      <button class="ok" id="btnStart" data-page-node-id="fXrYJ1cw18v43AnAtWSy7s">开始下载</button>
+      <button id="btnPause" disabled data-page-node-id="T8vlLdh0EMDx9u0ZVUEfer">暂停</button>
+      <button class="dan" id="btnStop" disabled data-page-node-id="yrLj9W59jUft6rJHic87Op">停止</button>
+      <div class="sep" data-page-node-id="Q2Rq89NqbjziC0X3c9rJ5G"></div>
+      <label data-page-node-id="aEEWPgAd7V5fIce2BA4Jwf">并发 <select id="optConc" data-page-node-id="kjjemHUBVkr7r8k2vISVq5">
+        <option data-page-node-id="LM8DjKB1qakF6ocEgNsMGf">1</option><option data-page-node-id="zNL0pwSFi77EyQJVxjvvcb">2</option><option selected data-page-node-id="MJrqheQxvz27TLsaByY9He">4</option>
+        <option data-page-node-id="YAZEHVxGvMvU6KqwD7YJRN">6</option><option data-page-node-id="4X174JXHAAgP8QFeMdJjjd">8</option><option data-page-node-id="EnY63uDDHvXkUx09EvT5u4">12</option>
       </select></label>
-      <div class="grow"></div>
-      <button class="sm" id="btnExpTxt">导出 TXT</button>
-      <button class="sm" id="btnExpXlsx">导出 Excel</button>
+      <div class="grow" data-page-node-id="D44PRjMfVWJL6YF1XHGBFB"></div>
+      <button class="sm" id="btnExpTxt" data-page-node-id="WSyEei2lj3rXfom7tpzDng">导出 TXT</button>
+      <button class="sm" id="btnExpXlsx" data-page-node-id="xUXfkrlCOTowBIvel4s9yj">导出 Excel</button>
     </div>
 
-    <div class="sum">
-      <div><div class="v" id="sTotal">0</div><div class="k">链接总数</div></div>
-      <div><div class="v c-ok" id="sDone">0</div><div class="k">已完成</div></div>
-      <div><div class="v c-err" id="sFail">0</div><div class="k">失败</div></div>
-      <div><div class="v" id="sSize">0 B</div><div class="k">已下载</div></div>
-      <div><div class="v c-pri" id="sSpeed">—</div><div class="k">速度</div></div>
-      <div><div class="v" id="sEta">—</div><div class="k">剩余</div></div>
+    <div class="sum" data-page-node-id="CmDABQPJdeFRoD0zVSqDQ7">
+      <div data-page-node-id="v9F9LnifMrhierXJZLxLv7"><div class="v" id="sSel" style="color:var(--pri)" data-page-node-id="1UJZVctXmzj0wVAgBrM4ja">0</div><div class="k" data-page-node-id="Hd7fSMJkB08UEAcIhRFHsR">已选</div></div>
+      <div data-page-node-id="v9F9LnifMrhierXJZLxLv7"><div class="v" id="sTotal" data-page-node-id="1UJZVctXmzj0wVAgBrM4jf">0</div><div class="k" data-page-node-id="Hd7fSMJkB08UEAcIhRFHsQ">链接总数</div></div>
+      <div data-page-node-id="xnpcBALVrSwDUF6O7fQ6mu"><div class="v c-ok" id="sDone" data-page-node-id="VHjzfYzsyO6gpVQmmmvoHZ">0</div><div class="k" data-page-node-id="Js8C0xNFABoSloGelUXLjG">已完成</div></div>
+      <div data-page-node-id="Jiy5ZHKgP4io79tVpXLDEN"><div class="v c-err" id="sFail" data-page-node-id="0HqanuQhLAYYHEXcsmOVIZ">0</div><div class="k" data-page-node-id="3nXDdf6sPlcIDYLP0FMf8Y">失败</div></div>
+      <div data-page-node-id="Gh0aIybBO6anSPsCFzVSsN"><div class="v" id="sSize" data-page-node-id="SFgDYVfZG668HUlVzRZ4Mt">0 B</div><div class="k" data-page-node-id="RZz6ZrrrJ76vyjy7vbZeCn">已下载</div></div>
+      <div data-page-node-id="myGTIlaKiwCMSM23yuBccB"><div class="v c-pri" id="sSpeed" data-page-node-id="bCZ9ruYi5f98h3JJWcNJpu">—</div><div class="k" data-page-node-id="sxvEUDViCX06c2qffsKZfM">速度</div></div>
+      <div data-page-node-id="tf0K4v2BsSeP62fpEZ52vg"><div class="v" id="sEta" data-page-node-id="WMACA5OJa9mPZUKjsjcHhr">—</div><div class="k" data-page-node-id="ilUSs7qxbagGad9lTVRuQw">剩余</div></div>
     </div>
-    <div class="gp"><i id="gpBar"></i></div>
+    <div class="gp" data-page-node-id="3mqorzQxEcNVKPokC9V8iE"><i id="gpBar" data-page-node-id="fr2uQfVRc01RZdkcuPjQ5z"></i></div>
 
-    <div id="list"></div>
+    <div id="list" data-page-node-id="XzNyPlYiQAwYFgXQMN3kAo"></div>
   </div>
 
-  <div class="card" id="cardEmpty">
-    <div class="empty">
-      <div class="ic">&#128193;</div>
-      <p>还没有扫描任何文件夹</p>
-      <div class="hint">点上面的「浏览…」选择一个装着 txt 清单的文件夹，然后点「扫描链接」</div>
+  <div class="card" id="cardEmpty" data-page-node-id="Gt8lxCS94tRo7ILPUoce9x">
+    <div class="empty" data-page-node-id="brsI2aLnaAyl96vLAnbdb7">
+      <div class="ic" data-page-node-id="kWni93B0wrkJwfEHMH7Xqt">&#128193;</div>
+      <p data-page-node-id="WweJgnEGvzChFqCso2FcJt">还没有扫描任何文件夹</p>
+      <div class="hint" data-page-node-id="Gbar7QwnqXG0aE0pdynuK8">点上面的「浏览…」选择一个装着 txt 清单的文件夹，然后点「扫描链接」</div>
     </div>
   </div>
 
@@ -421,6 +443,7 @@ function guessName(item){
    ============================================================ */
 var S = {
   rootHandle:null, rootPath:'',
+  outHandle:null, outPath:'', outIsDefault:true,   // 下载目录（默认 = rootHandle）
   groups:[],            // {name, path, dirHandle, outName, tasks:[], collapsed}
   running:false, paused:false, abort:null,
   bytes:0, startedAt:0, lastBytes:0, lastTs:0, speed:0
@@ -431,6 +454,10 @@ window.TASKS = TASKS;   // 测试用
 function resetStats(){
   S.bytes = 0; S.startedAt = 0; S.lastBytes = 0; S.lastTs = 0; S.speed = 0;
 }
+
+// 拖拽多选 / Shift 范围选择的状态（render 要用，提前定义）
+var MS = { active:false, moved:false, dragMode:'', dragGroup:null, dragStartIdx:-1, anchor:null };
+window.MS = MS;
 
 /* ============================================================
    4. 选文件夹 + 扫描
@@ -443,11 +470,54 @@ $('btnBrowse').onclick = async function(){
     S.rootPath = h.name;
     $('path').value = h.name + '\\';
     $('n1').classList.add('off');
+    // 默认下载目录 = 源文件夹；如果用户之前设过 out 但和现在 root 不匹配，重置回默认
+    if(S.outIsDefault){
+      resetOutDir();
+    }else{
+      // outIsDefault=false 时保留用户已选的目录
+      renderOutPath();
+    }
     autoScanIfRestored();
   }catch(e){
     if(e.name !== 'AbortError') notice('err','选择文件夹失败：' + esc(e.message));
   }
 };
+
+$('btnBrowseOut').onclick = async function(){
+  if(!FS_OK){ notice('err','浏览器不支持，请改用 Chrome / Edge。'); return; }
+  if(!S.rootHandle){ notice('warn','请先选源文件夹。'); return; }
+  try{
+    // 用独立的 id 才不会被浏览器复用为根目录对话框
+    var h = await window.showDirectoryPicker({ id:'dl-out-' + Date.now(), mode:'readwrite' });
+    S.outHandle = h;
+    S.outIsDefault = false;
+    renderOutPath();
+    notice('info','下载目录已设置：' + h.name + '。要重新扫描以应用。');
+  }catch(e){
+    if(e.name !== 'AbortError') notice('err','选择下载目录失败：' + esc(e.message));
+  }
+};
+
+$('btnResetOut').onclick = function(){
+  resetOutDir();
+  notice('info','下载目录已恢复默认（= 源文件夹）。');
+};
+
+function resetOutDir(){
+  S.outHandle = S.rootHandle;
+  S.outIsDefault = true;
+  renderOutPath();
+}
+
+function renderOutPath(){
+  var el = $('pathOut');
+  if(!S.outHandle){ el.value = ''; el.placeholder = '默认 = 源文件夹下自动建子目录'; return; }
+  if(S.outHandle === S.rootHandle){
+    el.value = S.outHandle.name + '\\<各txt同名子目录>';
+  }else{
+    el.value = S.outHandle.name + '\\<各txt同名子目录>';
+  }
+}
 
 // 尝试恢复上次授权的目录（同一浏览器、同一文件路径）
 async function autoScanIfRestored(){
@@ -581,13 +651,24 @@ function render(){
     g.hd = d.querySelector('.grp-h');
     g.mini = d.querySelector('.mini i');
     g.ct = d.querySelector('.ct');
-    g.hd.onclick = function(){
+    // 整行都可点击切换折叠；但点 checkbox 不能折叠
+    g.hd.onclick = function(ev){
+      // checkbox 的点击冒泡到这里后，先判断 tag
+      var t = ev.target;
+      while(t && t !== g.hd){
+        if(t.tagName === 'INPUT' || t.tagName === 'BUTTON' || t.tagName === 'A') return;
+        t = t.parentNode;
+      }
       g.collapsed = !g.collapsed;
-      g.hd.classList.toggle('cl', g.collapsed);
+      d.classList.toggle('cl', g.collapsed);   // 关键修复：必须给外层 .grp 加 cl，CSS 是 .grp.cl .tk{display:none}
+      g.hd.classList.toggle('cl', g.collapsed); // 旋转箭头也用 .cl
     };
     g.tasks.forEach(function(t, ti){
       var r = document.createElement('div');
       r.className = 'tk';
+      r.dataset.tid = t.id;
+      r.dataset.gi = gi;
+      r.dataset.ti = ti;
       r.innerHTML =
         '<input type="checkbox" checked>' +
         '<span class="nm">'+(t.title ? '<span class="t">'+esc(t.title.slice(0,40))+'</span>' : '')+esc(t.filename)+'</span>' +
@@ -596,15 +677,119 @@ function render(){
         '<span class="pct"></span>' +
         '<span class="st wait">等待</span>';
       var cb = r.querySelector('input');
-      cb.onchange = function(){ t.sel = cb.checked; };
+      // —— 单击 checkbox 处理（含 Shift 范围选择）——
+      // 真实点击 vs 程序 cb.click() 行为不同：
+      //   真实点击：mousedown→mouseup→click 派发，cb.checked 在 click listener 里还是 pre-toggle 状态
+      //   cb.click()：浏览器先 toggle cb.checked，再派发 click event
+      // 解决：用 mousedown 记录 pre-state；click 派发时根据 _mdFired 决定 target 来自哪。
+      cb.addEventListener('mousedown', function(ev){
+        if(ev.button !== 0) return;
+        cb._mdFired = true;
+        cb._preChecked = cb.checked;
+        cb._shiftOnDown = ev.shiftKey;
+      });
+      cb.onclick = function(ev){
+        ev.stopPropagation();
+        ev.preventDefault();
+        var shift, target;
+        if(cb._mdFired){
+          // 真实点击路径：用 mousedown 时记录的 pre-state
+          shift = !!cb._shiftOnDown;
+          target = !cb._preChecked;
+          cb.checked = target;
+        }else{
+          // 程序 cb.click() 路径：浏览器已经 toggle，cb.checked 是新状态
+          shift = !!ev.shiftKey;
+          target = cb.checked;
+        }
+        cb._mdFired = false;
+        cb._shiftOnDown = false;
+        if(shift){
+          var anchor = MS.anchor;
+          if(anchor == null){
+            t.sel = target;
+            MS.anchor = ti;
+          }else{
+            var lo = Math.min(anchor, ti), hi = Math.max(anchor, ti);
+            for(var k=lo;k<=hi;k++){
+              var tt = g.tasks[k];
+              tt.sel = target;
+              if(tt.cb) tt.cb.checked = target;
+            }
+          }
+        }else{
+          t.sel = target;
+          MS.anchor = ti;
+        }
+        updateSummary(true);
+      };
+      // —— 拖拽多选 ——
+      r.addEventListener('mousedown', function(ev){
+        // 只响应"非 input 上"的左键；中右键/复选框单独走自己的逻辑
+        if(ev.button !== 0) return;
+        if(ev.target.tagName === 'INPUT') return;
+        // 记录起始任务在 g.tasks 里的索引
+        var ti2 = parseInt(r.dataset.ti, 10);
+        MS.active = true;
+        MS.dragMode = cb.checked ? 'uncheck' : 'check';   // 拖过的行最终会被设成与起始相反状态
+        MS.dragGroup = g;
+        MS.dragStartIdx = ti2;
+        // 单击行为（不拖动）：toggle + 锚点
+        // 通过延迟实现：mouseup 时看是否移动过
+        MS.moved = false;
+        MS.mouseDownEv = ev;
+        ev.preventDefault();
+      });
+      r.addEventListener('mouseover', function(ev){
+        if(!MS.active) return;
+        if(MS.dragGroup !== g) return;
+        MS.moved = true;
+        var ti2 = parseInt(r.dataset.ti, 10);
+        var lo = Math.min(MS.dragStartIdx, ti2), hi = Math.max(MS.dragStartIdx, ti2);
+        for(var k=lo;k<=hi;k++){
+          var tt = g.tasks[k];
+          var want = MS.dragMode === 'check';
+          if(tt.sel !== want){
+            tt.sel = want;
+            if(tt.cb) tt.cb.checked = want;
+          }
+        }
+      });
       t.el = r; t.elSz = r.querySelector('.sz'); t.elBar = r.querySelector('.pb i');
       t.elPct = r.querySelector('.pct'); t.elSt = r.querySelector('.st'); t.cb = cb;
       d.appendChild(r);
     });
+    // 把整组挂到全局，方便 mouseup 时定位
+    g.elBox = d;
     box.appendChild(d);
+  });
+
+  // 全局 mouseup 结束拖拽
+  box.addEventListener('mouseup', function(ev){
+    if(!MS.active) return;
+    if(!MS.moved){
+      // 等价于单击：toggle 起始行
+      var g2 = MS.dragGroup;
+      var t2 = g2.tasks[MS.dragStartIdx];
+      if(t2 && t2.cb){
+        t2.cb.checked = !t2.cb.checked;
+        t2.sel = t2.cb.checked;
+      }
+    }
+    MS.active = false; MS.moved = false; MS.dragMode = '';
+    MS.dragGroup = null; MS.dragStartIdx = -1;
+    updateSummary(true);
+  });
+  box.addEventListener('mouseleave', function(ev){
+    // 鼠标离开列表区也算结束
+    if(MS.active){
+      MS.active = false; MS.moved = false; MS.dragMode = '';
+      MS.dragGroup = null; MS.dragStartIdx = -1;
+    }
   });
   updateSummary();
 }
+
 
 var ST_TEXT = {wait:'等待', run:'下载中', ok:'完成', fail:'失败', skip:'跳过', pause:'已暂停'};
 
@@ -642,11 +827,15 @@ function updateSummary(force){
     else if(t.status==='run') run++;
     if(t.sel) sel++;
   }
+  $('sSel').textContent = sel;
   $('sTotal').textContent = TASKS.length;
   $('sDone').textContent = ok;
   $('sFail').textContent = fail;
   $('sSize').textContent = fmtSize(S.bytes);
   $('sSpeed').textContent = S.running && !S.paused ? fmtSpeed(S.speed) : '—';
+
+  // 顶部右侧的"已选 N"也跟着刷新
+  var sc = $('selCnt'); if(sc) sc.textContent = '已选 ' + sel;
 
   var now = Date.now();
   if(force || now - lastPaint > 220){
@@ -659,7 +848,7 @@ function updateSummary(force){
   }
 
   $('btnStart').disabled = S.running || sel===0;
-  $('btnStart').textContent = S.running ? (S.paused ? '已暂停' : '下载中…') : '开始下载';
+  $('btnStart').textContent = S.running ? (S.paused ? '已暂停' : '下载中…') : (sel === TASKS.length && TASKS.length ? '开始下载（已选 '+sel+'）' : (sel ? '开始下载（已选 '+sel+'）' : '开始下载'));
   $('btnPause').disabled = !S.running;
   $('btnPause').textContent = S.paused ? '继续' : '暂停';
   $('btnStop').disabled = !S.running && !TASKS.some(function(t){return t.status==='run'||t.status==='pause';});
@@ -675,7 +864,10 @@ async function waitResume(){
 
 async function ensureOutDir(g){
   if(g.outHandle) return g.outHandle;
-  g.outHandle = await g.dirHandle.getDirectoryHandle(g.outName, {create:true});
+  // 下载目录 = S.outHandle（用户指定，默认 = S.rootHandle）
+  // 在它下面建 g.outName（=txt文件名）的子目录
+  var root = S.outHandle || S.rootHandle;
+  g.outHandle = await root.getDirectoryHandle(g.outName, {create:true});
   return g.outHandle;
 }
 
@@ -888,9 +1080,10 @@ $('btnStop').onclick = function(){
   updateSummary(true);
 };
 
-/* 全选 / 全不选 / 只选失败 */
+/* 全选 / 全不选 / 反选 / 只选失败 */
 $('btnSelAll').onclick = function(){ setSel(function(){ return true; }); };
 $('btnSelNone').onclick = function(){ setSel(function(){ return false; }); };
+$('btnSelInvert').onclick = function(){ setSel(function(t){ return !t.sel; }); };
 $('btnSelFail').onclick = function(){ setSel(function(t){ return t.status==='fail'||t.status==='pause'||t.status==='wait'; }); };
 function setSel(fn){
   TASKS.forEach(function(t){ t.sel = fn(t); if(t.cb) t.cb.checked = t.sel; });
@@ -910,8 +1103,12 @@ function saveBlob(blob, name){
 
 $('btnExpTxt').onclick = function(){
   var lines = [];
+  var outRoot = (S.outHandle && S.outHandle.name) || (S.rootHandle && S.rootHandle.name) || '';
+  lines.push('# 下载目录：' + (outRoot || '(未设置)') + '\\');
+  lines.push('# 每个 txt 一组子目录：' + outRoot + '\\<txt名>\\');
+  lines.push('');
   S.groups.forEach(function(g){
-    lines.push('# ' + g.path + '  →  ' + g.outName + '\\');
+    lines.push('## ' + g.name + '  →  ' + (outRoot ? outRoot + '\\' : '') + g.outName + '\\');
     g.tasks.forEach(function(t){
       lines.push((t.title ? t.title + '\t' : '') + t.url);
     });
@@ -1064,11 +1261,12 @@ $('btnExpXlsx').onclick = async function(){
   if(!TASKS.length){ notice('warn','没有可导出的链接。'); return; }
   var btn = this; btn.disabled = true; btn.textContent = '生成中…';
   try{
-    var headers = ['所属txt','输出目录','序号','标题','文件名','大小(字节)','状态','链接'];
+    var outRoot = (S.outHandle && S.outHandle.name) || (S.rootHandle && S.rootHandle.name) || '';
+    var headers = ['所属txt','下载根目录','输出目录','序号','标题','文件名','大小(字节)','状态','链接'];
     var rows = [];
     S.groups.forEach(function(g){
       g.tasks.forEach(function(t, i){
-        rows.push([g.path, g.outName+'\\', i+1, t.title || '', t.filename,
+        rows.push([g.path, outRoot + '\\', g.outName+'\\', i+1, t.title || '', t.filename,
                    t.total || 0, ST_TEXT[t.status] || '等待', t.url]);
       });
     });
