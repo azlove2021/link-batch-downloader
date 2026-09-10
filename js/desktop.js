@@ -52,10 +52,10 @@ async function refreshEnv(){
     envCache = await invoke('env_status');
     var rows = [
       ['版本', envCache.app_version],
-      ['FFmpeg', envCache.ffmpeg || '未找到 — 安装后加入 PATH'],
+      ['FFmpeg', envCache.ffmpeg ? (envCache.ffmpeg.indexOf('resources')>=0 || envCache.ffmpeg.indexOf('bin')>=0 ? envCache.ffmpeg + '（软件自带）' : envCache.ffmpeg) : '未找到 — 安装包应已内置；也可装 FFmpeg 并加入 PATH'],
       ['ffprobe', envCache.ffprobe || '—'],
-      ['LibreOffice', envCache.soffice || '未找到 — 可安装 LibreOffice'],
-      ['Tesseract', envCache.tesseract || '未装则用 Windows 系统 OCR']
+      ['LibreOffice', envCache.soffice ? envCache.soffice : '未找到 — 未打进安装包（体积过大）。请到 libreoffice.org 自行安装后即可用 Office→PDF'],
+      ['Tesseract', envCache.tesseract ? (envCache.tesseract.indexOf('resources')>=0 || envCache.tesseract.indexOf('tesseract')>=0 ? envCache.tesseract + '（软件自带）' : envCache.tesseract) : '未找到']
     ];
     box.innerHTML = rows.map(function(r){
       var warn = /未找到|未安装/.test(r[1]);

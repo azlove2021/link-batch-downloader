@@ -7,5 +7,7 @@ src-tauri/target/
 src-tauri/gen/
 web/
 dist/
+# 随包分发的大体积依赖（用 scripts/fetch-bundled-deps.ps1 准备）
+src-tauri/resources/bin/
 *.log
 

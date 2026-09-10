@@ -39,7 +39,43 @@ fn first_existing(cands: &[PathBuf]) -> Option<String> {
     None
 }
 
+/// 应用自带依赖目录：安装后 <装目录>\resources\bin\
+fn bundled_bin() -> Option<PathBuf> {
+    let exe = std::env::current_exe().ok()?;
+    let dir = exe.parent()?;
+    for cand in [
+        dir.join("resources").join("bin"),
+        dir.join("bin"),
+    ] {
+        if cand.is_dir() {
+            return Some(cand);
+        }
+    }
+    // 开发模式：src-tauri/resources/bin
+    if let Some(dev) = dir
+        .ancestors()
+        .map(|a| a.join("src-tauri").join("resources").join("bin"))
+        .find(|p| p.is_dir())
+    {
+        return Some(dev);
+    }
+    None
+}
+
+fn bundled_tool(rel: &str) -> Option<String> {
+    let base = bundled_bin()?;
+    let p = base.join(rel);
+    if p.is_file() {
+        return Some(p.to_string_lossy().to_string());
+    }
+    None
+}
+
 pub fn detect_ffmpeg() -> Option<String> {
+    // 优先用软件自带（分发给他人也能用）
+    if let Some(p) = bundled_tool("ffmpeg/ffmpeg.exe") {
+        return Some(p);
+    }
     if let Some(p) = which("ffmpeg") {
         return Some(p);
     }
@@ -51,6 +87,9 @@ pub fn detect_ffmpeg() -> Option<String> {
 }
 
 pub fn detect_ffprobe() -> Option<String> {
+    if let Some(p) = bundled_tool("ffmpeg/ffprobe.exe") {
+        return Some(p);
+    }
     if let Some(p) = which("ffprobe") {
         return Some(p);
     }
@@ -85,6 +124,15 @@ pub fn detect_soffice() -> Option<String> {
     ])
 }
 
+fn bundled_tessdata() -> Option<PathBuf> {
+    let base = bundled_bin()?;
+    let p = base.join("tesseract").join("tessdata");
+    if p.is_dir() {
+        return Some(p);
+    }
+    None
+}
+
 fn user_tessdata() -> Option<PathBuf> {
     if let Ok(home) = std::env::var("USERPROFILE") {
         let p = PathBuf::from(home).join("tessdata");
@@ -101,11 +149,28 @@ fn user_tessdata() -> Option<PathBuf> {
     None
 }
 
+fn preferred_tessdata() -> Option<PathBuf> {
+    // 优先软件自带（分发包里已含 chi_sim + eng）
+    if let Some(p) = bundled_tessdata() {
+        if p.join("eng.traineddata").is_file() || p.join("chi_sim.traineddata").is_file() {
+            return Some(p);
+        }
+    }
+    if let Some(p) = user_tessdata() {
+        return Some(p);
+    }
+    None
+}
+
 pub fn detect_tesseract() -> Option<String> {
     if let Ok(p) = std::env::var("TESSERACT_PATH") {
         if Path::new(&p).is_file() {
             return Some(p);
         }
+    }
+    // 自带优先
+    if let Some(p) = bundled_tool("tesseract/tesseract.exe") {
+        return Some(p);
     }
     if let Some(p) = which("tesseract") {
         return Some(p);
@@ -277,7 +342,7 @@ $result.Text
 }
 
 pub fn ocr_tesseract(tesseract: String, path: String) -> Result<String, String> {
-    let tessdata = user_tessdata();
+    let tessdata = preferred_tessdata();
     let mut base_args: Vec<String> = vec![];
     if let Some(td) = &tessdata {
         base_args.push("--tessdata-dir".into());
