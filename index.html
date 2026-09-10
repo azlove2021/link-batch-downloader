@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>办公工具箱 · 本地离线多功能网页工具</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="top">
+  <div class="logo">🧰</div>
+  <div>
+    <h1>办公工具箱</h1>
+    <div class="sub">本地离线 · 纯浏览器 · 零上传 · 双击即用</div>
+  </div>
+  <div id="compat" class="badge">检测中…</div>
+</header>
+
+<div class="shell">
+  <!-- ============ 侧栏导航 ============ -->
+  <nav class="side" id="sideNav">
+    <div class="grp-t">首页</div>
+    <a class="nav on" data-tool="home"><span class="ic">🏠</span>工具总览</a>
+
+    <div class="grp-t">下载与校验</div>
+    <a class="nav" data-tool="dl"><span class="ic">📥</span>批量下载</a>
+    <a class="nav" data-tool="hash"><span class="ic">🔒</span>哈希校验</a>
+
+    <div class="grp-t">文本处理</div>
+    <a class="nav" data-tool="text"><span class="ic">📝</span>文本处理</a>
+    <a class="nav" data-tool="json"><span class="ic">{}</span>JSON 工具</a>
+    <a class="nav" data-tool="encode"><span class="ic">🔐</span>编码转换</a>
+    <a class="nav" data-tool="regex"><span class="ic">🔍</span>正则测试</a>
+    <a class="nav" data-tool="diff"><span class="ic">±</span>文本对比</a>
+
+    <div class="grp-t">格式转换</div>
+    <a class="nav" data-tool="convert"><span class="ic">🔄</span>表格互转</a>
+    <a class="nav" data-tool="image"><span class="ic">🖼️</span>图片工具</a>
+    <a class="nav" data-tool="crop"><span class="ic">✂️</span>图片裁剪</a>
+    <a class="nav" data-tool="stitch"><span class="ic">🔗</span>长图拼接</a>
+    <a class="nav" data-tool="pdf"><span class="ic">📄</span>PDF 工具</a>
+    <a class="nav" data-tool="md"><span class="ic">MD</span>Markdown</a>
+
+    <div class="grp-t">办公实用</div>
+    <a class="nav" data-tool="invoice"><span class="ic">🧾</span>发票提取</a>
+    <a class="nav" data-tool="qr"><span class="ic">▣</span>二维码生成</a>
+    <a class="nav" data-tool="time"><span class="ic">⏱</span>时间戳</a>
+    <a class="nav" data-tool="rand"><span class="ic">🎲</span>密码 / UUID</a>
+    <a class="nav" data-tool="calc"><span class="ic">🧮</span>房贷 / 利息</a>
+    <a class="nav" data-tool="tstat"><span class="ic">📏</span>文本统计</a>
+    <a class="nav" data-tool="jwt"><span class="ic">🪪</span>JWT 查看</a>
+    <a class="nav" data-tool="crypto"><span class="ic">🗝</span>AES / HMAC</a>
+    <a class="nav" data-tool="outdir"><span class="ic">📂</span>统一输出目录</a>
+
+    <div class="foot">
+      全部数据仅在本机浏览器处理，<br>不会上传到任何服务器。<br>
+      推荐 Chrome / Edge。
+    </div>
+  </nav>
+
+  <!-- ============ 主内容 ============ -->
+  <main class="main">
+    <div id="notices"></div>
+    <div class="wrap">
+
+      <!-- ========== 首页 ========== -->
+      <section id="tool-home" class="tool on">
+        <div class="hero">
+          <h2>本地离线办公工具箱</h2>
+          <p>把日常办公里高频的「复制粘贴小活儿」收进一个页面：批量下载、文本整理、格式转换、PDF、发票字段提取……全部在浏览器本地完成，文件不外传。</p>
+          <div class="chips">
+            <span>零依赖</span><span>零上传</span><span>双击打开</span><span>Chrome / Edge</span><span>可拷贝分发</span>
+          </div>
+          <div class="row" style="margin-top:16px;max-width:520px">
+            <input type="text" id="homeSearch" class="grow" placeholder="搜索工具：发票 / pdf / base64 / 二维码…" autocomplete="off" style="padding:10px 14px;font-size:14px">
+          </div>
+          <div class="muted" id="searchHint" style="margin-top:8px;display:none"></div>
+        </div>
+        <div class="dash" id="dashGrid"></div>
+      </section>
+
+      <!-- ========== 1. 批量下载 ========== -->
+      <section id="tool-dl" class="tool">
+        <h2 class="th">批量下载</h2>
+        <p class="td">扫描文件夹里的 txt，按文件名自动分目录下载。支持断点续传、SHA-256 校验、导出清单。</p>
+
+        <div class="card">
+          <div class="card-h">
+            <div class="n" id="n1">1</div>
+            <h3>选择文件夹</h3>
+            <span class="tip">文件夹里放装着下载链接的 txt</span>
+          </div>
+          <div class="card-b">
+            <div class="pathbox">
+              <span class="lbl">源文件夹</span>
+              <input id="path" placeholder="尚未选择文件夹 — 点右侧「浏览」按钮" readonly>
+              <button id="btnBrowse">浏览…</button>
+            </div>
+            <div class="pathbox">
+              <span class="lbl">下载到</span>
+              <input id="pathOut" placeholder="默认 = 源文件夹下自动建子目录" readonly>
+              <button id="btnBrowseOut">浏览…</button>
+              <button id="btnResetOut" class="sm" title="恢复默认（= 源文件夹）">重置</button>
+            </div>
+            <div class="opts">
+              <label><input type="checkbox" id="optSub"> 包含子文件夹里的 txt</label>
+              <label>同名文件 <select id="optDup">
+                <option value="resume">续传（推荐）</option>
+                <option value="skip">跳过</option>
+                <option value="over">重新下载</option>
+              </select></label>
+              <label title="下载完成后立刻算 SHA-256"><input type="checkbox" id="optHashSha" checked> 算 SHA-256（写入下载目录）</label>
+            </div>
+            <div style="margin-top:14px">
+              <button id="btnScan" class="pri">扫描链接</button>
+              <span class="muted" style="margin-left:10px">点扫描后，下方会列出所有 txt 里的链接；勾选要下的，开始下载。</span>
+            </div>
+            <details class="help">
+              <summary>txt 文件支持哪些格式？</summary>
+              <div>
+                <b>格式一：一行一个纯链接</b><br>
+                <span class="mono">https://example.com/a.pdf</span><br><br>
+                <b>格式二：序号 + 标题 + 链接</b><br>
+                <span class="mono">1. 产品白皮书 https://example.com/a.pdf</span><br><br>
+                <b>格式三：标题一行、链接一行</b><br>
+                <span class="mono">产品白皮书</span><br>
+                <span class="mono">https://example.com/a.pdf</span><br><br>
+                <b>格式四：Markdown 链接</b><br>
+                <span class="mono">[产品白皮书](https://example.com/a.pdf)</span><br><br>
+                会自动去重、自动推断扩展名；链接里有空格也能正确识别。
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <div class="card" id="card2" style="display:none">
+          <div class="card-h">
+            <div class="n" id="n2">2</div>
+            <h3>下载列表</h3>
+            <span class="tip" id="tip2"></span>
+            <div class="right">
+              <button class="sm" id="btnSelAll">全选</button>
+              <button class="sm" id="btnSelNone">全不选</button>
+              <button class="sm" id="btnSelInvert" title="把当前选中的取消勾选，未选的勾上">反选</button>
+              <button class="sm" id="btnSelFail">只选失败</button>
+              <span class="muted" id="selCnt" style="margin-left:4px;font-variant-numeric:tabular-nums">已选 0</span>
+            </div>
+          </div>
+          <div class="bar">
+            <button class="ok" id="btnStart">开始下载</button>
+            <button id="btnPause" disabled>暂停</button>
+            <button class="dan" id="btnStop" disabled>停止</button>
+            <span class="sep"></span>
+            <label class="inline">并发 <select id="optConc">
+              <option>1</option><option>2</option><option selected>4</option>
+              <option>6</option><option>8</option><option>12</option>
+            </select></label>
+            <span class="grow"></span>
+            <button class="sm" id="btnExpSha" title="把所有已算的 SHA-256 写到每个分组目录下的 _checksums.sha256.txt">导出 SHA-256</button>
+            <button class="sm" id="btnExpTxt">导出 TXT</button>
+            <button class="sm" id="btnExpXlsx">导出 Excel</button>
+          </div>
+          <div class="sum">
+            <div><div class="v" id="sSel" style="color:var(--pri)">0</div><div class="k">已选</div></div>
+            <div><div class="v" id="sTotal">0</div><div class="k">链接总数</div></div>
+            <div><div class="v c-ok" id="sDone">0</div><div class="k">已完成</div></div>
+            <div><div class="v c-err" id="sFail">0</div><div class="k">失败</div></div>
+            <div><div class="v" id="sSize">0 B</div><div class="k">已下载</div></div>
+            <div><div class="v c-pri" id="sSpeed">—</div><div class="k">速度</div></div>
+            <div><div class="v" id="sEta">—</div><div class="k">剩余</div></div>
+          </div>
+          <div class="gp"><i id="gpBar"></i></div>
+          <div id="list"></div>
+        </div>
+
+        <div class="card" id="cardEmpty">
+          <div class="empty">
+            <div class="ic">📁</div>
+            <p>还没有扫描任何文件夹</p>
+            <div class="hint">点上面的「浏览…」选择一个装着 txt 清单的文件夹，然后点「扫描链接」</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 2. 哈希校验 ========== -->
+      <section id="tool-hash" class="tool">
+        <h2 class="th">哈希校验</h2>
+        <p class="td">对本地任意文件 / 文件夹计算 SHA-256 / MD5，可写入标准校验文件。</p>
+        <div class="card">
+          <div class="card-h">
+            <h3>文件 / 文件夹 哈希</h3>
+            <span class="tip">纯前端本地计算</span>
+          </div>
+          <div class="card-b">
+            <div class="pathbox">
+              <span class="lbl">选 文件</span>
+              <input id="hashPathFile" placeholder="点右侧「浏览文件」选一个本地文件" readonly>
+              <button id="btnHashFile">浏览文件…</button>
+            </div>
+            <div class="pathbox">
+              <span class="lbl">选 文件夹</span>
+              <input id="hashPathFolder" placeholder="点右侧「浏览文件夹」选一个本地文件夹（会递归所有文件）" readonly>
+              <button id="btnHashFolder">浏览文件夹…</button>
+            </div>
+            <div class="opts">
+              <label class="ck"><input type="checkbox" id="hashAlgoSha" checked> SHA-256</label>
+              <label class="ck"><input type="checkbox" id="hashAlgoMd5"> MD5（仅 &lt;100MB）</label>
+              <label class="ck"><input type="checkbox" id="hashWriteFile" checked> 文件夹模式下写 _checksums.sha256.txt</label>
+            </div>
+            <div style="margin-top:14px">
+              <button id="btnHashCalc" class="pri" disabled>开始计算</button>
+              <button id="btnHashReset" class="sm">清空</button>
+              <span class="muted" style="margin-left:10px" id="hashHint">先选择文件或文件夹</span>
+            </div>
+            <div id="hashResult" class="hash-result"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 3. 文本处理 ========== -->
+      <section id="tool-text" class="tool">
+        <h2 class="th">文本处理</h2>
+        <p class="td">一行一行的文字整理利器：多行转一行、去重、排序、提取号码/链接、加序号……</p>
+        <div class="card">
+          <div class="card-h">
+            <h3>输入</h3>
+            <div class="right">
+              <span class="muted" id="textStat">0 行 · 0 字</span>
+            </div>
+          </div>
+          <div class="card-b">
+            <textarea id="textIn" placeholder="把多行文本粘贴到这里&#10;例如：&#10;张三&#10;李四&#10;王五"></textarea>
+            <div class="row" style="margin-top:12px">
+              <button class="pri" id="txJoin">多行 → 一行</button>
+              <label class="inline">分隔符
+                <select id="txSep">
+                  <option value=",">逗号 ,</option>
+                  <option value="，">中文逗号，</option>
+                  <option value=";">分号 ;</option>
+                  <option value="、">顿号、</option>
+                  <option value=" ">空格</option>
+                  <option value="|">竖线 |</option>
+                  <option value="custom">自定义…</option>
+                </select>
+              </label>
+              <input type="text" id="txSepCustom" placeholder="自定义分隔符" style="width:100px;display:none">
+              <span class="sep"></span>
+              <button id="txDedupe">去重</button>
+              <button id="txSortA">升序</button>
+              <button id="txSortD">降序</button>
+              <button id="txTrim">去空白</button>
+              <button id="txBlank">删空行</button>
+              <button id="txNumber">加序号</button>
+              <button id="txReverse">倒序</button>
+            </div>
+            <div class="row" style="margin-top:10px">
+              <span class="muted">提取：</span>
+              <button class="sm" data-extract="url">链接</button>
+              <button class="sm" data-extract="email">邮箱</button>
+              <button class="sm" data-extract="phone">手机号</button>
+              <button class="sm" data-extract="idcard">身份证</button>
+              <button class="sm" data-extract="num">纯数字</button>
+              <button class="sm" data-extract="cn">中文</button>
+              <span class="sep"></span>
+              <button class="sm" id="txToUpper">转大写</button>
+              <button class="sm" id="txToLower">转小写</button>
+              <button class="sm" id="txReplace">查找替换…</button>
+              <button class="sm" id="txPrefix">批量加前缀…</button>
+              <button class="sm" id="txSuffix">批量加后缀…</button>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h">
+            <h3>结果</h3>
+            <div class="right">
+              <span class="muted" id="textOutStat"></span>
+              <button class="sm" id="txCopy">复制</button>
+              <button class="sm" id="txClear">清空</button>
+              <button class="sm" id="txSwap">⇄ 交换</button>
+              <button class="sm pri" id="txDownload">下载</button>
+            </div>
+          </div>
+          <div class="card-b">
+            <textarea id="textOut" placeholder="处理结果会出现在这里"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 4. JSON ========== -->
+      <section id="tool-json" class="tool">
+        <h2 class="th">JSON 工具</h2>
+        <p class="td">格式化、压缩、校验、排序键，以及 JSON ↔ CSV 互转。</p>
+        <div class="card">
+          <div class="card-h">
+            <h3>输入</h3>
+            <div class="right">
+              <button class="sm pri" id="jsonFormat">格式化</button>
+              <button class="sm" id="jsonMinify">压缩</button>
+              <button class="sm" id="jsonSort">键排序</button>
+              <button class="sm" id="jsonEscape">转义字符串</button>
+              <button class="sm" id="jsonUnescape">反转义</button>
+            </div>
+          </div>
+          <div class="card-b">
+            <div class="split">
+              <textarea id="jsonIn" placeholder='粘贴 JSON，例如 {"name":"张三","tags":["a","b"]}'></textarea>
+              <textarea id="jsonOut" placeholder="结果" readonly></textarea>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <button class="sm" id="jsonCopyOut">复制结果</button>
+              <button class="sm" id="jsonSwap">⇄ 交换</button>
+              <span class="sep"></span>
+              <button class="sm" id="json2csv">JSON → CSV</button>
+              <button class="sm" id="csv2json">CSV → JSON</button>
+              <label class="inline">CSV 分隔符
+                <select id="jsonCsvSep">
+                  <option value=",">,</option>
+                  <option value=";">;</option>
+                  <option value="\t">Tab</option>
+                  <option value="|">|</option>
+                </select>
+              </label>
+              <span class="muted" id="jsonMsg"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 5. 编码转换 ========== -->
+      <section id="tool-encode" class="tool">
+        <h2 class="th">编码转换</h2>
+        <p class="td">Base64、URL 编解码、HTML 实体、UTF-8 / GBK 文本编码互转。</p>
+        <div class="card">
+          <div class="card-h">
+            <h3>Base64</h3>
+            <div class="right">
+              <button class="sm pri" id="b64Enc">编码 →</button>
+              <button class="sm" id="b64Dec">← 解码</button>
+              <label class="ck"><input type="checkbox" id="b64Url"> URL-safe</label>
+            </div>
+          </div>
+          <div class="card-b">
+            <div class="split">
+              <textarea id="b64In" placeholder="原文或 Base64"></textarea>
+              <textarea id="b64Out" placeholder="结果" readonly></textarea>
+            </div>
+            <div class="row" style="margin-top:10px">
+              <button class="sm" id="b64Copy">复制结果</button>
+              <button class="sm" id="b64Clear">清空</button>
+              <label class="ck"><input type="checkbox" id="b64Utf8" checked> 中文按 UTF-8（推荐勾选）</label>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h">
+            <h3>URL / HTML 实体</h3>
+            <div class="right">
+              <button class="sm" id="urlEnc">URL 编码 →</button>
+              <button class="sm" id="urlDec">← URL 解码</button>
+              <span class="sep"></span>
+              <button class="sm" id="htmlEnc">HTML 转义 →</button>
+              <button class="sm" id="htmlDec">← HTML 反转义</button>
+            </div>
+          </div>
+          <div class="card-b">
+            <div class="split">
+              <textarea id="urlIn" class="sm" placeholder="文本或 URL / HTML"></textarea>
+              <textarea id="urlOut" class="sm" placeholder="结果" readonly></textarea>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h">
+            <h3>文本编码（UTF-8 / GBK / UTF-16）</h3>
+            <div class="right">
+              <label class="inline">源编码
+                <select id="encFrom">
+                  <option value="utf-8">UTF-8</option>
+                  <option value="gbk">GBK</option>
+                  <option value="utf-16le">UTF-16 LE</option>
+                  <option value="utf-16be">UTF-16 BE</option>
+                </select>
+              </label>
+              <label class="inline">目标编码
+                <select id="encTo">
+                  <option value="utf-8">UTF-8</option>
+                  <option value="gbk">GBK</option>
+                  <option value="utf-16le">UTF-16 LE</option>
+                </select>
+              </label>
+              <button class="sm pri" id="encRun">转换</button>
+            </div>
+          </div>
+          <div class="card-b">
+            <div class="split">
+              <textarea id="encIn" class="sm" placeholder="粘贴文本，或点下方上传文件字节"></textarea>
+              <textarea id="encOut" class="sm" placeholder="结果" readonly></textarea>
+            </div>
+            <div class="row" style="margin-top:10px">
+              <button class="sm" id="encFileBtn">从文件读取…</button>
+              <input type="file" id="encFile" style="display:none" accept=".txt,.csv,.json,.xml,.htm,.html,.log,.md">
+              <button class="sm" id="encSaveBtn">结果存为文件…</button>
+              <span class="muted" id="encMsg"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 6. 正则 ========== -->
+      <section id="tool-regex" class="tool">
+        <h2 class="th">正则测试</h2>
+        <p class="td">在文本上试正则，实时看匹配结果与分组。</p>
+        <div class="card">
+          <div class="card-b">
+            <div class="row mb">
+              <span class="mono" style="color:var(--tx2)">/</span>
+              <input type="text" id="rePat" class="grow mono" placeholder="例如 \d{11}" style="min-width:200px">
+              <span class="mono" style="color:var(--tx2)">/</span>
+              <input type="text" id="reFlags" class="mono" value="g" style="width:70px" placeholder="flags">
+              <button class="sm" id="reTest">测试</button>
+            </div>
+            <div class="row mb">
+              <span class="muted">常用：</span>
+              <button class="sm" data-re="\d{11}">手机号</button>
+              <button class="sm" data-re="[\w.+-]+@[\w-]+\.[\w.]+">邮箱</button>
+              <button class="sm" data-re="https?://[^\s]+">链接</button>
+              <button class="sm" data-re="\d{17}[\dXx]">身份证</button>
+              <button class="sm" data-re="[1-9]\d{0,2}(?:\.\d+)?">金额</button>
+              <button class="sm" data-re="1[3-9]\d{9}">手机</button>
+            </div>
+            <textarea id="reText" placeholder="待测文本"></textarea>
+            <div class="row" style="margin-top:10px">
+              <span class="muted" id="reStat"></span>
+              <span class="grow"></span>
+              <button class="sm" id="reToText">匹配结果送文本处理</button>
+            </div>
+            <div class="out empty" id="reOut" style="margin-top:12px">匹配结果会高亮显示在这里</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 7. Diff ========== -->
+      <section id="tool-diff" class="tool">
+        <h2 class="th">文本对比</h2>
+        <p class="td">对比两段文本的差异，高亮新增 / 删除行（行级 diff）。</p>
+        <div class="card">
+          <div class="card-h">
+            <h3>对比</h3>
+            <div class="right">
+              <button class="sm pri" id="diffRun">对比</button>
+              <button class="sm" id="diffSwap">⇄ 交换</button>
+              <button class="sm" id="diffClear">清空</button>
+            </div>
+          </div>
+          <div class="card-b">
+            <div class="split">
+              <div>
+                <div class="muted" style="margin-bottom:4px">原文 A</div>
+                <textarea id="diffA" style="min-height:180px"></textarea>
+              </div>
+              <div>
+                <div class="muted" style="margin-bottom:4px">新文 B</div>
+                <textarea id="diffB" style="min-height:180px"></textarea>
+              </div>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <span class="muted" id="diffStat"></span>
+            </div>
+            <div class="out diff-wrap" id="diffOut" style="margin-top:10px;max-height:480px">点击「对比」查看结果</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 8. 表格互转 ========== -->
+      <section id="tool-convert" class="tool">
+        <h2 class="th">表格互转</h2>
+        <p class="td">CSV / TSV / JSON 数组 / Markdown 表格 互转，方便在 Excel 和代码之间搬运数据。</p>
+        <div class="card">
+          <div class="card-h">
+            <h3>输入</h3>
+            <div class="right">
+              <label class="inline">输入类型
+                <select id="cvInType">
+                  <option value="csv">CSV</option>
+                  <option value="tsv">TSV</option>
+                  <option value="json">JSON 数组</option>
+                  <option value="md">Markdown 表格</option>
+                </select>
+              </label>
+              <label class="ck"><input type="checkbox" id="cvHasHeader" checked> 首行是表头</label>
+            </div>
+          </div>
+          <div class="card-b">
+            <textarea id="cvIn" class="sm" placeholder="粘贴 CSV / TSV / JSON / Markdown 表格"></textarea>
+            <div class="row" style="margin-top:12px">
+              <button class="sm pri" id="cvToJson">→ JSON</button>
+              <button class="sm" id="cvToCsv">→ CSV</button>
+              <button class="sm" id="cvToTsv">→ TSV</button>
+              <button class="sm" id="cvToMd">→ Markdown</button>
+              <button class="sm" id="cvToXlsx">→ Excel (.xlsx)</button>
+              <button class="sm" id="cvCopy">复制结果</button>
+              <span class="muted" id="cvMsg"></span>
+            </div>
+            <div class="out empty" id="cvOut" style="margin-top:12px;min-height:140px">转换结果</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 9. 图片工具 ========== -->
+      <section id="tool-image" class="tool">
+        <h2 class="th">图片工具</h2>
+        <p class="td">本地批量转换格式（PNG / JPG / WebP）、压缩、缩放、加水印。不上传原图。</p>
+        <div class="card">
+          <div class="card-h">
+            <h3>图片</h3>
+            <div class="right">
+              <label class="inline">输出格式
+                <select id="imgFmt">
+                  <option value="image/jpeg">JPG</option>
+                  <option value="image/png">PNG</option>
+                  <option value="image/webp">WebP</option>
+                </select>
+              </label>
+              <label class="inline">质量
+                <input type="range" id="imgQuality" min="10" max="100" value="85" style="width:100px">
+                <span id="imgQVal" class="mono" style="width:28px">85</span>
+              </label>
+              <label class="inline">最长边(px)
+                <input type="number" id="imgMax" min="0" step="16" value="0" style="width:80px" placeholder="0=不缩">
+              </label>
+            </div>
+          </div>
+          <div class="card-b">
+            <div class="drop" id="imgDrop">
+              <b>点击选择图片</b>，或把图片拖到这里<br>
+              <span class="muted">支持多选；也可选择整个文件夹</span>
+              <div class="row" style="justify-content:center;margin-top:12px">
+                <button class="sm" id="imgPick" type="button">选择图片…</button>
+                <button class="sm" id="imgFolder" type="button">选择文件夹…</button>
+              </div>
+            </div>
+            <input type="file" id="imgFiles" accept="image/*" multiple style="display:none">
+            <div class="opts">
+              <label class="ck"><input type="checkbox" id="imgWatermark"> 右下角加水印文字</label>
+              <input type="text" id="imgWmText" placeholder="水印文字" style="width:140px;display:none" value="内部资料">
+              <label class="inline">背景
+                <select id="imgBg">
+                  <option value="auto">自动</option>
+                  <option value="#ffffff">白</option>
+                  <option value="#000000">黑</option>
+                  <option value="transparent">透明(仅PNG/WebP)</option>
+                </select>
+              </label>
+              <span class="grow"></span>
+              <button class="ok" id="imgRun" disabled>开始转换</button>
+              <button class="sm" id="imgZip" disabled>打包下载 ZIP</button>
+              <button class="sm" id="imgClear">清空</button>
+            </div>
+            <div class="img-grid" id="imgGrid"></div>
+            <input type="file" id="imgZipOut" style="display:none">
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 10. 发票提取 ========== -->
+      <section id="tool-invoice" class="tool">
+        <h2 class="th">发票信息提取</h2>
+        <p class="td">从电子发票文本 / PDF 中提取发票号码、日期、金额等字段，批量导出表格。适合已复制文字或带文字层的 PDF。</p>
+        <div class="card">
+          <div class="card-h">
+            <h3>输入</h3>
+            <div class="right">
+              <button class="sm" id="invPasteBtn">从剪贴板粘贴</button>
+              <button class="sm" id="invPdfBtn">从 PDF 提取文字…</button>
+              <input type="file" id="invPdf" accept=".pdf,application/pdf" multiple style="display:none">
+              <button class="sm" id="invTxtBtn">从 txt 批量…</button>
+              <input type="file" id="invTxt" accept=".txt,.md,text/plain" multiple style="display:none">
+            </div>
+          </div>
+          <div class="card-b">
+            <div class="drop" id="invDrop">
+              <b>粘贴发票文字</b>，或把 .txt / .pdf 拖到这里<br>
+              <span class="muted">支持一次多张（用空行或「====」分隔）；图片发票请先 OCR 复制文字</span>
+            </div>
+            <textarea id="invText" style="margin-top:12px;min-height:160px" placeholder="电子发票（普通发票）&#10;发票代码：011002100111&#10;发票号码：12345678&#10;开票日期：2024年01月15日&#10;价税合计（大写）：壹佰元整&#10;¥100.00"></textarea>
+            <div class="row" style="margin-top:12px">
+              <button class="pri" id="invParse">解析发票字段</button>
+              <button class="sm" id="invClear">清空</button>
+              <button class="sm" id="invCsv">导出 CSV</button>
+              <button class="sm" id="invXlsx">导出 Excel</button>
+              <span class="muted" id="invStat"></span>
+            </div>
+            <div style="margin-top:14px" id="invTableWrap"></div>
+            <details class="help">
+              <summary>说明：图片 OCR 与 PDF 支持范围</summary>
+              <div>
+                本工具<b>完全离线</b>，不内置体积巨大的 OCR 引擎。推荐流程：<br>
+                1. 电子发票 PDF：点「从 PDF 提取文字」——对带文字层的电子发票通常可直接提取；<br>
+                2. 扫描件 / 图片：用微信、QQ 或专业 OCR 先识别出文字，再粘贴到上方；<br>
+                3. 也可把文字存成 .txt 拖进来，一次解析多张。<br><br>
+                自动识别字段：发票代码 / 号码、开票日期、校验码后 6 位、购买方 & 销售方名称与税号、
+                金额、税额、价税合计（大小写）。识别失败的字段可手工在表格中核对后再导出。
+              </div>
+            </details>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 11. 二维码 ========== -->
+      <section id="tool-qr" class="tool">
+        <h2 class="th">二维码生成</h2>
+        <p class="td">把文本 / 链接生成二维码，可下载 PNG。纯本地生成，无网络。</p>
+        <div class="card">
+          <div class="card-b">
+            <div class="qr-box">
+              <div>
+                <canvas id="qrCanvas" width="220" height="220"></canvas>
+                <div class="row" style="margin-top:10px">
+                  <button class="sm pri" id="qrGen">生成</button>
+                  <button class="sm" id="qrDl">下载 PNG</button>
+                </div>
+              </div>
+              <div class="col grow" style="min-width:220px">
+                <textarea id="qrText" class="sm" placeholder="输入要编码的文本或链接">https://example.com</textarea>
+                <div class="row">
+                  <label class="inline">尺寸
+                    <select id="qrSize">
+                      <option>180</option><option selected>220</option>
+                      <option>320</option><option>480</option>
+                    </select>
+                  </label>
+                  <label class="inline">纠错
+                    <select id="qrEc">
+                      <option value="L">L (~7%)</option>
+                      <option value="M" selected>M (~15%)</option>
+                      <option value="Q">Q (~25%)</option>
+                      <option value="H">H (~30%)</option>
+                    </select>
+                  </label>
+                  <label class="inline">前景
+                    <input type="color" id="qrFg" value="#000000" style="width:36px;height:28px;padding:2px">
+                  </label>
+                  <label class="inline">背景
+                    <input type="color" id="qrBg" value="#ffffff" style="width:36px;height:28px;padding:2px">
+                  </label>
+                </div>
+                <div class="muted">支持：网址、纯文本、WIFI:、tel:、短信: 等。内容过长时会自动提高纠错等级失败则请缩短文本。</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 12. 时间戳 ========== -->
+      <section id="tool-time" class="tool">
+        <h2 class="th">时间戳转换</h2>
+        <p class="td">秒 / 毫秒时间戳 ↔ 本地时间、UTC，互转与当前时间。</p>
+        <div class="card">
+          <div class="card-b">
+            <div class="row mb">
+              <button class="pri" id="tsNow">获取当前时间</button>
+              <span class="mono" id="tsNowShow" style="font-size:15px;font-weight:600"></span>
+            </div>
+            <div class="g2">
+              <div class="col">
+                <div class="muted">时间戳 → 时间</div>
+                <div class="row">
+                  <input type="text" id="tsIn" class="grow mono" placeholder="1700000000 或 1700000000000">
+                  <label class="ck"><input type="checkbox" id="tsMs"> 毫秒</label>
+                  <button class="sm" id="tsConv">转换</button>
+                </div>
+                <div class="out" id="tsOut" style="min-height:100px">—</div>
+              </div>
+              <div class="col">
+                <div class="muted">时间 → 时间戳</div>
+                <input type="text" id="dtIn" class="mono" placeholder="2024-01-15 12:00:00 或 2024/1/15">
+                <div class="row">
+                  <button class="sm pri" id="dtConv">转换</button>
+                  <button class="sm" id="dtUseNow">用当前时间填入</button>
+                </div>
+                <div class="out" id="dtOut" style="min-height:100px">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 13. 密码 / UUID ========== -->
+      <section id="tool-rand" class="tool">
+        <h2 class="th">密码 / UUID</h2>
+        <p class="td">生成强随机密码、UUID v4、随机字符串、数字验证码。</p>
+        <div class="card">
+          <div class="card-h"><h3>密码生成</h3></div>
+          <div class="card-b">
+            <div class="row mb">
+              <label class="inline">长度
+                <input type="number" id="pwLen" min="4" max="128" value="16" style="width:70px">
+              </label>
+              <label class="ck"><input type="checkbox" id="pwLower" checked> 小写 a-z</label>
+              <label class="ck"><input type="checkbox" id="pwUpper" checked> 大写 A-Z</label>
+              <label class="ck"><input type="checkbox" id="pwDigit" checked> 数字 0-9</label>
+              <label class="ck"><input type="checkbox" id="pwSymbol" checked> 符号 !@#</label>
+              <label class="inline">个数
+                <input type="number" id="pwCount" min="1" max="50" value="5" style="width:60px">
+              </label>
+              <button class="pri" id="pwGen">生成</button>
+            </div>
+            <div class="out" id="pwOut" style="min-height:100px">—</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>UUID / 随机串</h3></div>
+          <div class="card-b">
+            <div class="row mb">
+              <button class="pri" id="uuGen">生成 UUID ×10</button>
+              <button class="sm" id="uuNano">随机 32 位 hex ×10</button>
+              <button class="sm" id="uuBase64">随机 Base32 风格 ×10</button>
+              <button class="sm" id="uuCode">6 位数字验证码</button>
+              <button class="sm" id="uuCopy">复制全部</button>
+            </div>
+            <div class="out" id="uuOut" style="min-height:100px">—</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== PDF ========== -->
+      <section id="tool-pdf" class="tool">
+        <h2 class="th">PDF 工具</h2>
+        <p class="td">本地合并、拆分、旋转、加页码、提取页面、查看信息。使用 pdf-lib，文件不上传。</p>
+        <div class="card">
+          <div class="card-h">
+            <h3>文件</h3>
+            <div class="right" id="pdfModeBtns">
+              <button class="sm pri" data-m="merge">合并</button>
+              <button class="sm" data-m="split">拆分</button>
+              <button class="sm" data-m="rotate">旋转</button>
+              <button class="sm" data-m="pagenum">页码</button>
+              <button class="sm" data-m="extract">提取页</button>
+              <button class="sm" data-m="info">信息</button>
+            </div>
+          </div>
+          <div class="card-b">
+            <div class="drop" id="pdfDrop">
+              <b>点击或拖入 PDF</b><br>
+              <span class="muted" id="pdfHint">按列表顺序合并。可上下移动调整顺序，然后「生成 PDF」。</span>
+              <div class="row" style="justify-content:center;margin-top:12px">
+                <button class="sm" type="button" id="pdfPick">选择 PDF…</button>
+                <button class="sm" type="button" id="pdfClear">清空</button>
+              </div>
+            </div>
+            <input type="file" id="pdfFiles" accept="application/pdf,.pdf" multiple style="display:none">
+            <div style="margin-top:12px" id="pdfList"></div>
+
+            <div id="pdfOpts" style="margin-top:14px">
+              <div class="row" id="pdfSplitStyleRow" style="margin-bottom:10px;display:none">
+                <label class="inline">拆分方式
+                  <select id="pdfSplitStyle">
+                    <option value="pages">从第 N 页拆成两个</option>
+                    <option value="every">每 N 页一个文件</option>
+                  </select>
+                </label>
+              </div>
+              <div class="row" id="pdfSplitPagesRow" style="display:none;margin-bottom:10px">
+                <label class="inline">从第
+                  <input type="number" id="pdfSplitAt" min="1" value="1" style="width:70px"> 页开始
+                </label>
+              </div>
+              <div class="row" id="pdfSplitEveryRow" style="display:none;margin-bottom:10px">
+                <label class="inline">每
+                  <input type="number" id="pdfSplitEvery" min="1" value="1" style="width:70px"> 页
+                </label>
+              </div>
+              <div class="row" id="pdfRotateRow" style="display:none;margin-bottom:10px">
+                <label class="inline">旋转
+                  <select id="pdfRotate">
+                    <option value="90">90°</option>
+                    <option value="180">180°</option>
+                    <option value="270">270°</option>
+                  </select>
+                </label>
+                <label class="inline">页码范围（空=全部）
+                  <input type="text" id="pdfRotateRange" placeholder="如 1-3,5" style="width:120px">
+                </label>
+              </div>
+              <div class="row" id="pdfPagenumRow" style="display:none;margin-bottom:10px">
+                <label class="inline">位置
+                  <select id="pdfNumPos"><option value="bottom">底部</option><option value="top">顶部</option></select>
+                </label>
+                <label class="inline">字号
+                  <input type="number" id="pdfNumSize" value="12" min="6" max="36" style="width:60px">
+                </label>
+                <label class="inline">起始
+                  <input type="number" id="pdfNumStart" value="1" min="1" style="width:60px">
+                </label>
+                <label class="inline">模板
+                  <input type="text" id="pdfNumTpl" value="{n} / {total}" style="width:120px">
+                </label>
+              </div>
+              <div class="row" id="pdfExtractRow" style="display:none;margin-bottom:10px">
+                <label class="inline">页码
+                  <input type="text" id="pdfExtract" placeholder="1,3,5-8" style="width:140px">
+                </label>
+              </div>
+            </div>
+
+            <div class="row" style="margin-top:6px">
+              <button class="pri" id="pdfRun">生成 PDF</button>
+            </div>
+            <div class="out empty" id="pdfOut" style="margin-top:12px;white-space:pre-wrap">结果会显示在这里</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== Markdown ========== -->
+      <section id="tool-md" class="tool">
+        <h2 class="th">Markdown 编辑器</h2>
+        <p class="td">左写右预览，自动存草稿到本机。可导出 Markdown 或自包含 HTML。</p>
+        <div class="card">
+          <div class="card-h">
+            <h3>编辑</h3>
+            <div class="right">
+              <span class="muted" id="mdStat"></span>
+              <button class="sm" data-md="h2">H2</button>
+              <button class="sm" data-md="h3">H3</button>
+              <button class="sm" data-md="bold"><b>B</b></button>
+              <button class="sm" data-md="italic"><i>I</i></button>
+              <button class="sm" data-md="code">&lt;/&gt;</button>
+              <button class="sm" data-md="link">链接</button>
+              <button class="sm" data-md="img">图</button>
+              <button class="sm" data-md="ul">列表</button>
+              <button class="sm" data-md="ol">序号</button>
+              <button class="sm" data-md="quote">引用</button>
+              <button class="sm" data-md="hr">分割线</button>
+              <button class="sm" data-md="table">表格</button>
+            </div>
+          </div>
+          <div class="card-b">
+            <div class="drop" id="mdDrop" style="margin-bottom:10px;padding:12px">
+              可拖入 .md 文件，或
+              <button class="sm" type="button" id="mdFileBtn">选择文件…</button>
+              <input type="file" id="mdFile" accept=".md,.markdown,.txt" style="display:none">
+            </div>
+            <div class="g2" style="grid-template-columns:1fr 1fr">
+              <textarea id="mdSrc" style="min-height:420px" placeholder="# 标题&#10;&#10;开始写 Markdown…"></textarea>
+              <div class="md-prev" id="mdPreview" style="min-height:420px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:16px;background:#fff;line-height:1.7"></div>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <button class="sm pri" id="mdDownloadMd">下载 .md</button>
+              <button class="sm" id="mdDownloadHtml">下载 HTML</button>
+              <button class="sm" id="mdCopyMd">复制 Markdown</button>
+              <button class="sm" id="mdCopyHtml">复制 HTML</button>
+              <button class="sm dan" id="mdClear">清空草稿</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 房贷 / 利息 ========== -->
+      <section id="tool-calc" class="tool">
+        <h2 class="th">房贷 / 利息计算器</h2>
+        <p class="td">等额本息 / 等额本金月供，以及单利、复利终值估算。</p>
+        <div class="card">
+          <div class="card-h"><h3>房贷</h3></div>
+          <div class="card-b">
+            <div class="row mb">
+              <label class="inline">房价(万)
+                <input type="number" id="mdPrice" value="300" min="0" step="0.1" style="width:90px">
+              </label>
+              <label class="inline">贷款比例 %
+                <input type="number" id="mdRatio" value="70" min="1" max="100" style="width:70px">
+              </label>
+              <label class="inline">年限
+                <input type="number" id="mdYears" value="30" min="1" max="40" style="width:70px"> 年
+              </label>
+              <label class="inline">年利率 %
+                <input type="number" id="mdRate" value="3.1" min="0" step="0.01" style="width:80px">
+              </label>
+              <label class="inline">方式
+                <select id="mdMode">
+                  <option value="eq">等额本息</option>
+                  <option value="prin">等额本金</option>
+                </select>
+              </label>
+              <button class="pri" id="mdCalc">计算</button>
+            </div>
+            <div class="out" id="mdResult" style="min-height:120px">—</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>单利 / 复利</h3></div>
+          <div class="card-b">
+            <div class="row mb">
+              <label class="inline">本金
+                <input type="number" id="itPrincipal" value="100000" min="0" style="width:110px">
+              </label>
+              <label class="inline">年利率 %
+                <input type="number" id="itRate" value="3" min="0" step="0.01" style="width:80px">
+              </label>
+              <label class="inline">年限
+                <input type="number" id="itYears" value="5" min="0" step="0.1" style="width:70px">
+              </label>
+              <label class="inline">每年计息
+                <input type="number" id="itTimes" value="1" min="1" max="365" style="width:70px"> 次
+              </label>
+              <button class="pri" id="itCalc">计算</button>
+            </div>
+            <div class="out" id="itResult" style="min-height:120px">—</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 文本统计 ========== -->
+      <section id="tool-tstat" class="tool">
+        <h2 class="th">文本统计</h2>
+        <p class="td">字数、行数、中英数字、标点、段落与预计阅读时间。</p>
+        <div class="card">
+          <div class="card-h">
+            <h3>文本</h3>
+            <div class="right">
+              <button class="sm" id="tsClear">清空</button>
+              <button class="sm pri" id="tsAnalyze">重新统计</button>
+            </div>
+          </div>
+          <div class="card-b">
+            <textarea id="tsText" style="min-height:200px" placeholder="粘贴要统计的文本…"></textarea>
+            <div class="out" id="tsOut" style="margin-top:12px;max-height:360px;overflow:auto;font-family:inherit;white-space:normal"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== JWT ========== -->
+      <section id="tool-jwt" class="tool">
+        <h2 class="th">JWT 查看器</h2>
+        <p class="td">本地查看 Header / Payload，不验签、不上传。适合排查登录与权限问题。</p>
+        <div class="card">
+          <div class="card-b">
+            <div class="row mb">
+              <textarea id="jwtIn" class="sm grow" style="min-height:72px" placeholder="粘贴 JWT，可带 Bearer 前缀"></textarea>
+            </div>
+            <div class="row mb">
+              <button class="pri" id="jwtParse">解析</button>
+              <button class="sm" id="jwtClear">清空</button>
+              <span class="muted" id="jwtWarn"></span>
+            </div>
+            <div class="g2">
+              <div>
+                <div class="muted" style="margin-bottom:6px">Header</div>
+                <div class="out" id="jwtHeader" style="min-height:120px">—</div>
+              </div>
+              <div>
+                <div class="muted" style="margin-bottom:6px">Payload</div>
+                <div class="out" id="jwtPayload" style="min-height:120px">—</div>
+              </div>
+            </div>
+            <div style="margin-top:12px">
+              <div class="muted" style="margin-bottom:6px">Signature</div>
+              <div class="out" id="jwtSig" style="min-height:64px">—</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 图片裁剪 ========== -->
+      <section id="tool-crop" class="tool">
+        <h2 class="th">图片裁剪</h2>
+        <p class="td">拖拽框选裁剪区域，支持常用比例锁、导出 PNG/JPG/WebP。图片不上传。</p>
+        <div class="card">
+          <div class="card-b">
+            <div class="drop" id="cropDrop" style="margin-bottom:12px">
+              <b>点击或拖入图片</b><br>
+              <span class="muted" id="cropInfo">尚未选择图片</span>
+              <div class="row" style="justify-content:center;margin-top:10px">
+                <button class="sm" type="button" id="cropPick">选择图片…</button>
+                <button class="sm" type="button" id="cropClear">清空</button>
+              </div>
+            </div>
+            <input type="file" id="cropFiles" accept="image/*" style="display:none">
+            <div class="row mb">
+              <label class="inline">比例
+                <select id="cropRatio">
+                  <option value="free">自由</option>
+                  <option value="1:1">1:1</option>
+                  <option value="4:3">4:3</option>
+                  <option value="3:4">3:4</option>
+                  <option value="16:9">16:9</option>
+                  <option value="9:16">9:16</option>
+                </select>
+              </label>
+              <button class="sm" id="cropFull">全图</button>
+              <label class="inline">格式
+                <select id="cropFmt">
+                  <option value="image/png">PNG</option>
+                  <option value="image/jpeg" selected>JPG</option>
+                  <option value="image/webp">WebP</option>
+                </select>
+              </label>
+              <label class="inline">质量
+                <input type="range" id="cropQuality" min="10" max="100" value="92" style="width:90px">
+                <span id="cropQVal" class="mono">92</span>
+              </label>
+              <label class="inline">背景
+                <select id="cropBg">
+                  <option value="transparent">透明</option>
+                  <option value="#ffffff" selected>白</option>
+                  <option value="#000000">黑</option>
+                </select>
+              </label>
+            </div>
+            <div id="cropStage" style="text-align:center;background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:12px;min-height:120px">
+              <canvas id="cropCanvas" style="max-width:100%;cursor:crosshair;display:none"></canvas>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <button class="pri" id="cropRun">导出裁剪结果</button>
+              <span class="muted" id="cropOutMsg"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 长图拼接 ========== -->
+      <section id="tool-stitch" class="tool">
+        <h2 class="th">长图拼接</h2>
+        <p class="td">多张图片拼成横向或竖向长图，可设间距、背景与宽度上限。</p>
+        <div class="card">
+          <div class="card-b">
+            <div class="drop" id="stitchDrop" style="margin-bottom:12px">
+              <b>点击或拖入多张图片</b><br>
+              <span class="muted">按列表顺序拼接，可上下调整</span>
+              <div class="row" style="justify-content:center;margin-top:10px">
+                <button class="sm" type="button" id="stitchPick">选择图片…</button>
+                <button class="sm" type="button" id="stitchClear">清空</button>
+              </div>
+            </div>
+            <input type="file" id="stitchFiles" accept="image/*" multiple style="display:none">
+            <div class="row mb">
+              <label class="inline">方向
+                <select id="stitchDir">
+                  <option value="v">竖向（上下）</option>
+                  <option value="h">横向（左右）</option>
+                </select>
+              </label>
+              <label class="inline">间距(px)
+                <input type="number" id="stitchGap" value="0" min="0" max="80" style="width:70px">
+              </label>
+              <label class="inline">最大边(px)
+                <input type="number" id="stitchMax" value="0" min="0" step="100" style="width:90px" placeholder="0=不缩">
+              </label>
+              <label class="inline">背景
+                <select id="stitchBg">
+                  <option value="#ffffff" selected>白</option>
+                  <option value="transparent">透明</option>
+                  <option value="#000000">黑</option>
+                </select>
+              </label>
+              <label class="inline">格式
+                <select id="stitchFmt">
+                  <option value="image/png" selected>PNG</option>
+                  <option value="image/jpeg">JPG</option>
+                  <option value="image/webp">WebP</option>
+                </select>
+              </label>
+              <label class="inline">质量
+                <input type="range" id="stitchQuality" min="10" max="100" value="92" style="width:90px">
+                <span id="stitchQVal" class="mono">92</span>
+              </label>
+            </div>
+            <div id="stitchList"></div>
+            <div class="row" style="margin-top:12px">
+              <button class="pri" id="stitchRun">生成长图</button>
+              <span class="muted" id="stitchOutMsg"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== AES / HMAC ========== -->
+      <section id="tool-crypto" class="tool">
+        <h2 class="th">AES / HMAC 加解密</h2>
+        <p class="td">基于浏览器 Web Crypto：AES-256-GCM 密文自包含盐与 IV；HMAC 可算消息认证码。密钥只在本机内存中。</p>
+        <div class="card">
+          <div class="card-h">
+            <h3>AES-256-GCM</h3>
+            <div class="right">
+              <label class="inline">迭代
+                <select id="aesIter">
+                  <option value="50000">50k</option>
+                  <option value="100000" selected>100k</option>
+                  <option value="210000">210k</option>
+                </select>
+              </label>
+              <button class="sm" id="aesClear">清空</button>
+              <button class="sm" id="aesCopy">复制结果</button>
+              <button class="sm" id="aesSwap">⇄ 交换</button>
+            </div>
+          </div>
+          <div class="card-b">
+            <div class="row mb">
+              <label class="inline grow">密码
+                <input type="text" id="aesPass" class="grow" placeholder="至少 6 位（不会上传）" style="min-width:180px">
+              </label>
+            </div>
+            <div class="split">
+              <textarea id="aesIn" class="sm" placeholder="加密前贴明文，解密前贴 Base64 密文"></textarea>
+              <textarea id="aesOut" class="sm" readonly placeholder="结果"></textarea>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <button class="pri" id="aesEncrypt">加密 →</button>
+              <button id="aesDecrypt">← 解密</button>
+              <span class="muted" id="aesMeta"></span>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h">
+            <h3>HMAC</h3>
+            <div class="right">
+              <label class="inline">算法
+                <select id="hmacAlgo">
+                  <option value="SHA-256" selected>SHA-256</option>
+                  <option value="SHA-1">SHA-1</option>
+                  <option value="SHA-384">SHA-384</option>
+                  <option value="SHA-512">SHA-512</option>
+                </select>
+              </label>
+              <label class="inline">密钥
+                <select id="hmacKeyMode">
+                  <option value="utf8" selected>文本</option>
+                  <option value="hex">Hex</option>
+                </select>
+              </label>
+              <button class="sm" id="hmacClear">清空</button>
+              <button class="sm" id="hmacCopy">复制</button>
+            </div>
+          </div>
+          <div class="card-b">
+            <div class="muted" id="hmacKeyHint" style="margin-bottom:8px">密钥按 UTF-8 文本解析</div>
+            <div class="row mb">
+              <label class="inline grow">密钥
+                <input type="text" id="hmacKey" class="grow mono" style="min-width:180px">
+              </label>
+            </div>
+            <div class="split">
+              <textarea id="hmacIn" class="sm" placeholder="消息"></textarea>
+              <textarea id="hmacOut" class="sm" readonly placeholder="Hex 签名"></textarea>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <button class="pri" id="hmacRun">计算 HMAC</button>
+              <span class="muted" id="hmacMeta"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 统一输出目录 ========== -->
+      <section id="tool-outdir" class="tool">
+        <h2 class="th">统一输出目录</h2>
+        <p class="td">设置一个常用文件夹后，图片、PDF、表格等导出会优先写入这里；不设则用浏览器默认下载位置。</p>
+        <div class="card">
+          <div class="card-b">
+            <div class="pathbox">
+              <span class="lbl">输出目录</span>
+              <input id="outDirPath" readonly placeholder="未设置 — 各工具仍可用浏览器默认下载">
+              <button id="outDirBrowse" class="pri">浏览…</button>
+              <button id="outDirClear" class="sm">清除</button>
+            </div>
+            <div class="opts">
+              <span class="muted">需要 Chrome / Edge（File System Access API）。权限会记在本机，重开页面通常可恢复。</span>
+            </div>
+            <details class="help">
+              <summary>哪些工具会使用统一目录？</summary>
+              <div>
+                图片裁剪、长图拼接、图片转换打包 ZIP、PDF 生成、表格/发票导出、二维码 PNG、Markdown 导出等——
+                凡是通过工具箱「保存/下载」的文件，若已设置统一目录则写入该目录，失败时自动回退为浏览器下载。<br><br>
+                批量下载仍使用自己步骤 1 里选择的下载目录（与本设置独立）。
+              </div>
+            </details>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<script src="js/vendor/pdf-lib.min.js"></script>
+<script src="js/vendor/markdown-it.min.js"></script>
+<script src="js/core.js"></script>
+<script src="js/outdir.js"></script>
+<script src="js/download.js"></script>
+<script src="js/hash.js"></script>
+<script src="js/text.js"></script>
+<script src="js/json.js"></script>
+<script src="js/encode.js"></script>
+<script src="js/regexdiff.js"></script>
+<script src="js/convert.js"></script>
+<script src="js/image.js"></script>
+<script src="js/imgedit.js"></script>
+<script src="js/invoice.js"></script>
+<script src="js/qrcode.js"></script>
+<script src="js/extras.js"></script>
+<script src="js/pdf.js"></script>
+<script src="js/markdown.js"></script>
+<script src="js/office.js"></script>
+<script src="js/aescrypto.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
