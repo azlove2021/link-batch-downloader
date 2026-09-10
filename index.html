@@ -15,6 +15,7 @@
     <div class="sub">本地离线 · 纯浏览器 · 零上传 · 双击即用</div>
   </div>
   <div id="compat" class="badge">检测中…</div>
+  <div id="deskBadge" class="badge" style="margin-left:8px">…</div>
 </header>
 
 <div class="shell">
@@ -57,6 +58,13 @@
     <a class="nav" data-tool="jwt"><span class="ic">🪪</span>JWT 查看</a>
     <a class="nav" data-tool="crypto"><span class="ic">🗝</span>AES / HMAC</a>
     <a class="nav" data-tool="outdir"><span class="ic">📂</span>统一输出目录</a>
+
+    <div class="grp-t">桌面增强</div>
+    <a class="nav" data-tool="av"><span class="ic">🎬</span>音视频转码</a>
+    <a class="nav" data-tool="offconv"><span class="ic">📑</span>Office→PDF</a>
+    <a class="nav" data-tool="ocr"><span class="ic">👁</span>图片 OCR</a>
+    <a class="nav" data-tool="clean"><span class="ic">🧹</span>大文件清理</a>
+    <a class="nav" data-tool="desk"><span class="ic">⚙️</span>桌面设置</a>
 
     <div class="foot">
       全部数据仅在本机浏览器处理，<br>不会上传到任何服务器。<br>
@@ -1385,6 +1393,137 @@
         </div>
       </section>
 
+      <!-- ========== 音视频转码 ========== -->
+      <section id="tool-av" class="tool">
+        <h2 class="th">音视频转码</h2>
+        <p class="td">调用本机 FFmpeg 转换格式或提取音频。需桌面版 + 已安装 FFmpeg（文件不上传）。</p>
+        <div class="card">
+          <div class="card-b">
+            <div class="drop" id="avDrop">
+              <b>选择音视频文件</b><br>
+              <span class="muted" id="avInfo">未选择</span>
+              <div class="row" style="justify-content:center;margin-top:10px">
+                <button class="sm" type="button" id="avPick">浏览…</button>
+              </div>
+            </div>
+            <input type="file" id="avFile" style="display:none">
+            <div class="row mb" style="margin-top:12px">
+              <label class="inline">输出
+                <select id="avFmt">
+                  <option value=".mp4">MP4 (H.264)</option>
+                  <option value=".webm">WebM</option>
+                  <option value=".mp3">MP3 音频</option>
+                  <option value=".wav">WAV 音频</option>
+                  <option value=".gif">GIF 动图</option>
+                </select>
+              </label>
+              <button class="pri" id="avRun" disabled>开始转码</button>
+            </div>
+            <div class="muted" id="avMsg"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== Office → PDF ========== -->
+      <section id="tool-offconv" class="tool">
+        <h2 class="th">Office → PDF</h2>
+        <p class="td">用本机 LibreOffice 将 Word / Excel / PPT 转为 PDF。需桌面版 + LibreOffice。</p>
+        <div class="card">
+          <div class="card-b">
+            <div class="drop" id="offDrop">
+              <b>选择 Word / Excel / PPT</b><br>
+              <span class="muted" id="offInfo">未选择</span>
+              <div class="row" style="justify-content:center;margin-top:10px">
+                <button class="sm" type="button" id="offPick">浏览…</button>
+              </div>
+            </div>
+            <input type="file" id="offFile" style="display:none">
+            <div class="row" style="margin-top:12px">
+              <button class="pri" id="offRun" disabled>转为 PDF</button>
+            </div>
+            <div class="muted" id="offMsg"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== OCR ========== -->
+      <section id="tool-ocr" class="tool">
+        <h2 class="th">图片 OCR</h2>
+        <p class="td">扫描件 / 发票截图本地识别文字。优先 Tesseract，否则用 Windows 系统 OCR（需桌面版）。</p>
+        <div class="card">
+          <div class="card-b">
+            <div class="drop" id="ocrDrop">
+              <b>选择图片</b><br>
+              <span class="muted" id="ocrInfo">未选择</span>
+              <div class="row" style="justify-content:center;margin-top:10px">
+                <button class="sm" type="button" id="ocrPick">浏览…</button>
+              </div>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <button class="pri" id="ocrRun" disabled>开始识别</button>
+              <button class="sm" id="ocrCopy">复制</button>
+              <button class="sm" id="ocrToInvoice">送入发票提取</button>
+            </div>
+            <textarea id="ocrOut" style="margin-top:12px;min-height:180px" placeholder="识别结果"></textarea>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 大文件清理 ========== -->
+      <section id="tool-clean" class="tool">
+        <h2 class="th">大文件清理</h2>
+        <p class="td">扫描指定目录下的大文件，可定位或移到回收站。跳过系统目录；删除前请自行确认。</p>
+        <div class="card">
+          <div class="card-b">
+            <div class="row mb">
+              <label class="inline grow">扫描路径
+                <input type="text" id="cleanRoot" class="mono grow" placeholder="C:\ 或 D:\Downloads" style="min-width:200px">
+              </label>
+              <label class="inline">≥ MB
+                <input type="number" id="cleanMin" value="100" min="1" style="width:80px">
+              </label>
+              <button class="pri" id="cleanRun" disabled>开始扫描</button>
+            </div>
+            <div class="notice warn" style="margin-bottom:10px">
+              <span>仅扫描列出，<b>不会自动删除</b>。点「回收站」会二次确认后移入回收站（可还原）。</span>
+            </div>
+            <div id="cleanList"><div class="muted">尚未扫描</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 桌面设置 ========== -->
+      <section id="tool-desk" class="tool">
+        <h2 class="th">桌面设置</h2>
+        <p class="td">托盘、右键菜单、本机依赖检测。仅桌面版可用。</p>
+        <div class="card">
+          <div class="card-h">
+            <h3>本机环境</h3>
+            <div class="right"><button class="sm" id="btnEnvRefresh">重新检测</button></div>
+          </div>
+          <div class="card-b">
+            <div class="out" id="envStatus" style="font-family:inherit;white-space:normal">检测中…</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>托盘</h3></div>
+          <div class="card-b">
+            <p class="muted">安装桌面版后，程序会最小化到系统托盘：左键单击打开主窗口；托盘菜单含「打开主窗口 / 检测本机工具 / 退出」。</p>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h"><h3>Windows 右键菜单</h3></div>
+          <div class="card-b">
+            <p class="muted">给当前用户注册：在 .txt / .pdf 上右键「用办公工具箱处理」，以及文件夹空白处菜单。写入 HKCU，无需管理员。</p>
+            <div class="row" style="margin-top:12px">
+              <button class="pri" id="ctxRegister">注册右键菜单</button>
+              <button class="sm dan" id="ctxUnregister">移除右键菜单</button>
+            </div>
+            <div class="muted" id="ctxMsg" style="margin-top:10px"></div>
+          </div>
+        </div>
+      </section>
+
     </div>
   </main>
 </div>
@@ -1411,6 +1550,7 @@
 <script src="js/aescrypto.js"></script>
 <script src="js/rename.js"></script>
 <script src="js/extra-tools.js"></script>
+<script src="js/desktop.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

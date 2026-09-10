@@ -15,12 +15,19 @@
 
 ### 桌面版（exe）
 
-若你已安装构建产物：
-
-- 运行 `dist/办公工具箱_1.0.0_x64-setup.exe` 安装  
+- 运行 `dist/办公工具箱_1.1.0_x64-setup.exe` 安装  
 - 或直接运行 `dist/办公工具箱-portable.exe` 便携版  
 
-自己从源码打包见 **[BUILD_TAURI.md](BUILD_TAURI.md)**（需安装 Rust + Node）。
+桌面版额外提供：
+
+- **系统托盘**（左键打开窗口，菜单：打开 / 检测工具 / 退出）
+- **右键菜单**（.txt / .pdf / 文件夹空白处「用办公工具箱处理」）
+- **音视频转码**（调用本机 FFmpeg）
+- **Office → PDF**（调用本机 LibreOffice）
+- **图片 OCR**（Tesseract 或 Windows 系统 OCR）
+- **大文件清理**（扫描 + 移入回收站）
+
+自己从源码打包见 **[BUILD_TAURI.md](BUILD_TAURI.md)**（需 Rust + Node）。
 
 所有处理都在浏览器/本机完成，**文件与文本不会上传到任何服务器**。
 

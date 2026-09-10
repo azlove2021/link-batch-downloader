@@ -45,14 +45,20 @@ var TOOLS = [
   { id:'tstat', name:'文本统计', desc:'字数、行数、阅读时间', k:'字数 统计 行数 阅读' },
   { id:'jwt', name:'JWT 查看', desc:'Header / Payload 本地解析', k:'jwt token 登录 解析' },
   { id:'crypto', name:'AES / HMAC', desc:'AES-GCM 加解密、HMAC 签名', k:'aes hmac 加密 解密 密码 签名 gcm' },
-  { id:'outdir', name:'统一输出目录', desc:'导出优先写入常用文件夹', k:'outdir 输出 目录 文件夹 导出' }
+  { id:'outdir', name:'统一输出目录', desc:'导出优先写入常用文件夹', k:'outdir 输出 目录 文件夹 导出' },
+  { id:'av', name:'音视频转码', desc:'本机 FFmpeg 转换（桌面版）', k:'ffmpeg 音视频 转码 mp4 mp3 gif 桌面' },
+  { id:'offconv', name:'Office→PDF', desc:'LibreOffice 转 PDF（桌面版）', k:'word excel ppt pdf libreoffice office 桌面' },
+  { id:'ocr', name:'图片 OCR', desc:'扫描件识别文字（桌面版）', k:'ocr 识别 扫描 发票 桌面' },
+  { id:'clean', name:'大文件清理', desc:'扫描大文件进回收站（桌面版）', k:'清理 大文件 c盘 回收站 桌面' },
+  { id:'desk', name:'桌面设置', desc:'托盘、右键菜单、依赖检测', k:'托盘 右键 设置 桌面 ffmpeg 检测' }
 ];
 
 var ICONS = {
   home:'🏠', dl:'📥', hash:'🔒', hcmp:'⚖️', rename:'✏️', text:'📝', json:'{}', sql:'SQL',
   encode:'🔐', regex:'🔍', diff:'±', convert:'🔄', image:'🖼️', crop:'✂️', stitch:'🔗',
   pdf:'📄', pdfcrypt:'🔏', md:'MD', invoice:'🧾', qr:'▣', color:'🎨', time:'⏱', rand:'🎲',
-  calc:'🧮', tstat:'📏', jwt:'🪪', crypto:'🗝', outdir:'📂'
+  calc:'🧮', tstat:'📏', jwt:'🪪', crypto:'🗝', outdir:'📂',
+  av:'🎬', offconv:'📑', ocr:'👁', clean:'🧹', desk:'⚙️'
 };
 
 function toolById(id){
