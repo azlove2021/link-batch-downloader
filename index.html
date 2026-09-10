@@ -26,10 +26,13 @@
     <div class="grp-t">下载与校验</div>
     <a class="nav" data-tool="dl"><span class="ic">📥</span>批量下载</a>
     <a class="nav" data-tool="hash"><span class="ic">🔒</span>哈希校验</a>
+    <a class="nav" data-tool="hcmp"><span class="ic">⚖️</span>哈希对比</a>
+    <a class="nav" data-tool="rename"><span class="ic">✏️</span>批量重命名</a>
 
     <div class="grp-t">文本处理</div>
     <a class="nav" data-tool="text"><span class="ic">📝</span>文本处理</a>
     <a class="nav" data-tool="json"><span class="ic">{}</span>JSON 工具</a>
+    <a class="nav" data-tool="sql"><span class="ic">SQL</span>SQL 格式化</a>
     <a class="nav" data-tool="encode"><span class="ic">🔐</span>编码转换</a>
     <a class="nav" data-tool="regex"><span class="ic">🔍</span>正则测试</a>
     <a class="nav" data-tool="diff"><span class="ic">±</span>文本对比</a>
@@ -40,11 +43,13 @@
     <a class="nav" data-tool="crop"><span class="ic">✂️</span>图片裁剪</a>
     <a class="nav" data-tool="stitch"><span class="ic">🔗</span>长图拼接</a>
     <a class="nav" data-tool="pdf"><span class="ic">📄</span>PDF 工具</a>
+    <a class="nav" data-tool="pdfcrypt"><span class="ic">🔏</span>PDF 加密</a>
     <a class="nav" data-tool="md"><span class="ic">MD</span>Markdown</a>
 
     <div class="grp-t">办公实用</div>
     <a class="nav" data-tool="invoice"><span class="ic">🧾</span>发票提取</a>
     <a class="nav" data-tool="qr"><span class="ic">▣</span>二维码生成</a>
+    <a class="nav" data-tool="color"><span class="ic">🎨</span>颜色 / 色板</a>
     <a class="nav" data-tool="time"><span class="ic">⏱</span>时间戳</a>
     <a class="nav" data-tool="rand"><span class="ic">🎲</span>密码 / UUID</a>
     <a class="nav" data-tool="calc"><span class="ic">🧮</span>房贷 / 利息</a>
@@ -1180,6 +1185,206 @@
         </div>
       </section>
 
+      <!-- ========== 批量重命名 ========== -->
+      <section id="tool-rename" class="tool">
+        <h2 class="th">批量重命名</h2>
+        <p class="td">规则链预览后重命名。Chrome/Edge 可对文件夹内文件原地改名；拖入文件则打包 ZIP 导出。</p>
+        <div class="card">
+          <div class="card-b">
+            <div class="drop" id="rnDrop">
+              <b>选择文件夹</b>（原地改名）或拖入文件（导出 ZIP）<br>
+              <span class="muted" id="rnHint">尚未选择</span>
+              <div class="row" style="justify-content:center;margin-top:10px">
+                <button class="sm" type="button" id="rnBrowse">选择文件夹…</button>
+              </div>
+            </div>
+            <div class="pathbox" style="margin-top:10px">
+              <span class="lbl">目标</span>
+              <input id="rnPath" readonly placeholder="未选择">
+            </div>
+            <div class="row mb" style="margin-top:8px">
+              <label class="inline">规则
+                <select id="rnMode">
+                  <option value="replace">查找替换</option>
+                  <option value="prefix">加前缀</option>
+                  <option value="suffix">加后缀</option>
+                  <option value="number">编号</option>
+                  <option value="lower">转小写</option>
+                  <option value="upper">转大写</option>
+                  <option value="trim">去首尾符号</option>
+                </select>
+              </label>
+              <label class="ck"><input type="checkbox" id="rnKeepExt" checked> 保留扩展名</label>
+              <label class="ck"><input type="checkbox" id="rnLowerExt"> 扩展名小写</label>
+            </div>
+            <div class="row mb" id="rnReplaceRow">
+              <label class="inline">查找 <input type="text" id="rnFrom" style="width:140px"></label>
+              <label class="inline">替换为 <input type="text" id="rnTo" style="width:140px"></label>
+            </div>
+            <div class="row mb" id="rnPreRow" style="display:none">
+              <label class="inline">前缀 <input type="text" id="rnPre" placeholder="2024_" style="width:160px"></label>
+            </div>
+            <div class="row mb" id="rnSufRow" style="display:none">
+              <label class="inline">后缀 <input type="text" id="rnSuf" placeholder="_final" style="width:160px"></label>
+            </div>
+            <div class="row mb" id="rnNumRow" style="display:none">
+              <label class="inline">起始 <input type="number" id="rnNumStart" value="1" style="width:70px"></label>
+              <label class="inline">位数 <input type="number" id="rnNumPad" value="2" min="1" max="8" style="width:70px"></label>
+              <label class="inline">模板 <input type="text" id="rnNumTpl" value="{n}_{name}" style="width:160px"></label>
+            </div>
+            <div id="rnList" style="margin-top:8px"></div>
+            <div class="row" style="margin-top:12px">
+              <button class="pri" id="rnRun">执行重命名</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== PDF 加密 ========== -->
+      <section id="tool-pdfcrypt" class="tool">
+        <h2 class="th">PDF 加密 / 解密</h2>
+        <p class="td">本地用 pdf-lib 设置打开密码并限制打印/复制；也可用密码解密已加密 PDF。</p>
+        <div class="card">
+          <div class="card-b">
+            <div class="row mb">
+              <label class="inline">模式
+                <select id="pdfCryptMode">
+                  <option value="encrypt">加密</option>
+                  <option value="decrypt">解密</option>
+                </select>
+              </label>
+              <label class="inline">密码
+                <input type="text" id="pdfCryptPass" placeholder="打开密码" style="width:180px">
+              </label>
+            </div>
+            <div class="drop" id="pdfCryptDrop">
+              <b>选择 PDF…</b><br>
+              <span class="muted" id="pdfCryptInfo">未选择</span>
+              <div class="row" style="justify-content:center;margin-top:10px">
+                <button class="sm" type="button" id="pdfCryptPick">浏览…</button>
+              </div>
+            </div>
+            <input type="file" id="pdfCryptFiles" accept=".pdf,application/pdf" style="display:none">
+            <div class="row" style="margin-top:12px">
+              <button class="pri" id="pdfCryptRun">处理 PDF</button>
+              <span class="muted" id="pdfCryptMsg"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 哈希对比 ========== -->
+      <section id="tool-hcmp" class="tool">
+        <h2 class="th">哈希对比</h2>
+        <p class="td">比较两段 SHA-256 是否一致，或计算并对比两个文件的 SHA-256。</p>
+        <div class="card">
+          <div class="card-b">
+            <div class="row mb">
+              <label class="inline">模式
+                <select id="hcMode">
+                  <option value="text">粘贴哈希文本</option>
+                  <option value="file">两个文件</option>
+                </select>
+              </label>
+              <button class="sm" id="hcClear">清空</button>
+            </div>
+            <div id="hcTextMode">
+              <div class="split">
+                <textarea id="hcTextA" class="sm" placeholder="哈希 A"></textarea>
+                <textarea id="hcTextB" class="sm" placeholder="哈希 B"></textarea>
+              </div>
+            </div>
+            <div id="hcFileMode" style="display:none">
+              <div class="pathbox">
+                <span class="lbl">文件 A</span>
+                <input id="hcA" readonly placeholder="未选择">
+                <button id="hcPickA">选择…</button>
+              </div>
+              <div class="pathbox">
+                <span class="lbl">文件 B</span>
+                <input id="hcB" readonly placeholder="未选择">
+                <button id="hcPickB">选择…</button>
+              </div>
+              <input type="file" id="hcFileA" style="display:none">
+              <input type="file" id="hcFileB" style="display:none">
+            </div>
+            <div class="row" style="margin-top:12px">
+              <button class="pri" id="hcRun">开始对比</button>
+            </div>
+            <div class="out empty" id="hcOut" style="margin-top:12px;white-space:pre-wrap;font-family:inherit">结果</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 颜色 / 色板 ========== -->
+      <section id="tool-color" class="tool">
+        <h2 class="th">颜色 / 色板</h2>
+        <p class="td">HEX / RGB / HSL 互转；从图片提取主色板，点击色块可复制。</p>
+        <div class="card">
+          <div class="card-h">
+            <h3>颜色转换</h3>
+            <div class="right"><button class="sm" id="colorCopy">复制 HEX</button></div>
+          </div>
+          <div class="card-b">
+            <div class="row mb">
+              <input type="color" id="colorPick" value="#2563eb" style="width:48px;height:36px;padding:2px">
+              <input type="text" id="colorIn" class="mono grow" value="#2563eb" placeholder="#2563eb 或 rgb(37,99,235)" style="max-width:220px">
+              <span id="colorSwatch" style="width:40px;height:36px;border-radius:8px;border:1px solid var(--line);background:#2563eb"></span>
+            </div>
+            <div class="out" id="colorOut" style="min-height:90px">—</div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-h">
+            <h3>图片色板</h3>
+            <div class="right">
+              <label class="inline">数量
+                <select id="palCount">
+                  <option>4</option><option selected>6</option><option>8</option><option>12</option>
+                </select>
+              </label>
+            </div>
+          </div>
+          <div class="card-b">
+            <div class="drop" id="palDrop">
+              <b>拖入或选择图片</b><br>
+              <span class="muted" id="palInfo">未选择</span>
+              <div class="row" style="justify-content:center;margin-top:10px">
+                <button class="sm" type="button" id="palPick">选择图片…</button>
+              </div>
+            </div>
+            <input type="file" id="palFile" accept="image/*" style="display:none">
+            <div id="palOut" style="margin-top:12px"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== SQL ========== -->
+      <section id="tool-sql" class="tool">
+        <h2 class="th">SQL 格式化</h2>
+        <p class="td">本地美化 SQL（关键字大写、子句换行、逗号断行）。不联网、不解析执行。</p>
+        <div class="card">
+          <div class="card-h">
+            <h3>SQL</h3>
+            <div class="right">
+              <span class="muted" id="sqlStat"></span>
+              <button class="sm" id="sqlClear">清空</button>
+              <button class="sm" id="sqlMin">压缩空白</button>
+              <button class="sm" id="sqlCopy">复制</button>
+            </div>
+          </div>
+          <div class="card-b">
+            <div class="split">
+              <textarea id="sqlIn" class="sm" style="min-height:220px" placeholder="select id,name,age from users where age>18 order by id"></textarea>
+              <textarea id="sqlOut" class="sm" readonly style="min-height:220px" placeholder="结果"></textarea>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <button class="pri" id="sqlRun">格式化</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
     </div>
   </main>
 </div>
@@ -1204,6 +1409,8 @@
 <script src="js/markdown.js"></script>
 <script src="js/office.js"></script>
 <script src="js/aescrypto.js"></script>
+<script src="js/rename.js"></script>
+<script src="js/extra-tools.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

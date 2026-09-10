@@ -1,0 +1,16 @@
+{
+  "name": "office-toolbox-desktop",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Office toolbox desktop shell (Tauri)",
+  "type": "module",
+  "scripts": {
+    "sync": "node scripts/sync-web.cjs",
+    "dev": "npm run sync && tauri dev",
+    "build": "npm run sync && tauri build",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.5.0"
+  }
+}

@@ -21,8 +21,11 @@ var TOOLS = [
   { id:'home', name:'工具总览', desc:'全部工具入口', k:'home 首页 总览 工具' },
   { id:'dl', name:'批量下载', desc:'扫 txt 清单，分目录批量下载，断点续传', k:'download 下载 链接 批量 txt' },
   { id:'hash', name:'哈希校验', desc:'文件/文件夹 SHA-256 / MD5', k:'hash sha md5 校验 摘要' },
+  { id:'hcmp', name:'哈希对比', desc:'两文件或两段哈希是否一致', k:'hash compare 对比 一致 sha256' },
+  { id:'rename', name:'批量重命名', desc:'规则预览、前缀编号、原地改名', k:'rename 重命名 批量 编号' },
   { id:'text', name:'文本处理', desc:'多行转一行、去重、排序、提取号码链接', k:'text 文本 多行 逗号 去重 提取' },
   { id:'json', name:'JSON 工具', desc:'格式化、压缩、JSON↔CSV', k:'json 格式化 压缩 csv' },
+  { id:'sql', name:'SQL 格式化', desc:'本地美化 SQL 语句', k:'sql 格式化 beautify 数据库' },
   { id:'encode', name:'编码转换', desc:'Base64、URL、HTML、GBK/UTF-8', k:'base64 url html gbk utf8 编码' },
   { id:'regex', name:'正则测试', desc:'实时匹配、常用模板', k:'regex 正则 表达式 匹配' },
   { id:'diff', name:'文本对比', desc:'行级 Diff 高亮', k:'diff 对比 差异' },
@@ -31,9 +34,11 @@ var TOOLS = [
   { id:'crop', name:'图片裁剪', desc:'框选裁剪、比例锁、导出', k:'crop 裁剪 剪切 图片 比例' },
   { id:'stitch', name:'长图拼接', desc:'多图拼横向/竖向长图', k:'stitch 拼接 长图 合并 图片' },
   { id:'pdf', name:'PDF 工具', desc:'合并、拆分、旋转、页码、提取页', k:'pdf 合并 拆分 旋转 页码 文档' },
+  { id:'pdfcrypt', name:'PDF 加密', desc:'加密/解密 PDF 密码', k:'pdf encrypt decrypt 密码 加密 解密' },
   { id:'md', name:'Markdown 编辑器', desc:'分屏预览、草稿、导出 HTML', k:'markdown md 预览 编辑器 草稿' },
   { id:'invoice', name:'发票提取', desc:'发票号码/金额/购销方，导出表格', k:'invoice 发票 报销 税号 金额' },
   { id:'qr', name:'二维码生成', desc:'文本链接转二维码 PNG', k:'qr 二维码 条码' },
+  { id:'color', name:'颜色 / 色板', desc:'HEX/RGB/HSL 与图片取色', k:'color 颜色 色板 hex rgb hsl 取色' },
   { id:'time', name:'时间戳', desc:'时间戳与日期互转', k:'timestamp 时间戳 日期 unix' },
   { id:'rand', name:'密码 / UUID', desc:'强密码、UUID、验证码', k:'password uuid 密码 随机 验证码' },
   { id:'calc', name:'房贷 / 利息', desc:'月供、单利复利估算', k:'房贷 月供 利息 复利 计算器 本金' },
@@ -44,9 +49,9 @@ var TOOLS = [
 ];
 
 var ICONS = {
-  home:'🏠', dl:'📥', hash:'🔒', text:'📝', json:'{}', encode:'🔐',
-  regex:'🔍', diff:'±', convert:'🔄', image:'🖼️', crop:'✂️', stitch:'🔗',
-  pdf:'📄', md:'MD', invoice:'🧾', qr:'▣', time:'⏱', rand:'🎲',
+  home:'🏠', dl:'📥', hash:'🔒', hcmp:'⚖️', rename:'✏️', text:'📝', json:'{}', sql:'SQL',
+  encode:'🔐', regex:'🔍', diff:'±', convert:'🔄', image:'🖼️', crop:'✂️', stitch:'🔗',
+  pdf:'📄', pdfcrypt:'🔏', md:'MD', invoice:'🧾', qr:'▣', color:'🎨', time:'⏱', rand:'🎲',
   calc:'🧮', tstat:'📏', jwt:'🪪', crypto:'🗝', outdir:'📂'
 };
 
