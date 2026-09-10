@@ -61,27 +61,61 @@ pub fn detect_ffprobe() -> Option<String> {
 }
 
 pub fn detect_soffice() -> Option<String> {
+    if let Ok(p) = std::env::var("SOFFICE_PATH") {
+        if Path::new(&p).is_file() {
+            return Some(p);
+        }
+    }
     if let Some(p) = which("soffice") {
+        return Some(p);
+    }
+    if let Some(p) = which("soffice.com") {
         return Some(p);
     }
     if let Some(p) = which("soffice.exe") {
         return Some(p);
     }
     first_existing(&[
+        PathBuf::from(r"C:\Program Files\LibreOffice\program\soffice.com"),
         PathBuf::from(r"C:\Program Files\LibreOffice\program\soffice.exe"),
+        PathBuf::from(r"C:\Program Files (x86)\LibreOffice\program\soffice.com"),
         PathBuf::from(r"C:\Program Files (x86)\LibreOffice\program\soffice.exe"),
+        PathBuf::from(r"D:\Program Files\LibreOffice\program\soffice.com"),
         PathBuf::from(r"D:\Program Files\LibreOffice\program\soffice.exe"),
-        PathBuf::from(r"C:\Program Files\WPS Office\ksolaunch.exe"),
     ])
 }
 
+fn user_tessdata() -> Option<PathBuf> {
+    if let Ok(home) = std::env::var("USERPROFILE") {
+        let p = PathBuf::from(home).join("tessdata");
+        if p.join("eng.traineddata").is_file() || p.join("chi_sim.traineddata").is_file() {
+            return Some(p);
+        }
+    }
+    if let Ok(p) = std::env::var("TESSDATA_PREFIX") {
+        let pb = PathBuf::from(&p);
+        if pb.is_dir() {
+            return Some(pb);
+        }
+    }
+    None
+}
+
 pub fn detect_tesseract() -> Option<String> {
+    if let Ok(p) = std::env::var("TESSERACT_PATH") {
+        if Path::new(&p).is_file() {
+            return Some(p);
+        }
+    }
     if let Some(p) = which("tesseract") {
         return Some(p);
     }
     first_existing(&[
         PathBuf::from(r"C:\Program Files\Tesseract-OCR\tesseract.exe"),
         PathBuf::from(r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe"),
+        dirs::data_local_dir()
+            .map(|d| d.join("Programs\\Tesseract-OCR\\tesseract.exe"))
+            .unwrap_or_default(),
     ])
 }
 
@@ -243,13 +277,30 @@ $result.Text
 }
 
 pub fn ocr_tesseract(tesseract: String, path: String) -> Result<String, String> {
+    let tessdata = user_tessdata();
+    let mut base_args: Vec<String> = vec![];
+    if let Some(td) = &tessdata {
+        base_args.push("--tessdata-dir".into());
+        base_args.push(td.to_string_lossy().to_string());
+    }
+    let mut args_chi = base_args.clone();
+    args_chi.push(path.clone());
+    args_chi.push("stdout".into());
+    args_chi.push("-l".into());
+    args_chi.push("chi_sim+eng".into());
+
     let out = Command::new(&tesseract)
-        .args([&path, "stdout", "-l", "chi_sim+eng"])
+        .args(&args_chi)
         .output()
         .map_err(|e| format!("Tesseract 启动失败：{}", e))?;
     if !out.status.success() {
+        let mut args_en = base_args;
+        args_en.push(path);
+        args_en.push("stdout".into());
+        args_en.push("-l".into());
+        args_en.push("eng".into());
         let out2 = Command::new(&tesseract)
-            .args([&path, "stdout", "-l", "eng"])
+            .args(&args_en)
             .output()
             .map_err(|e| e.to_string())?;
         if !out2.status.success() {
