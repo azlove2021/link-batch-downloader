@@ -39,6 +39,8 @@
 | **下载目录可选** | 默认在源文件夹下建「<txt 名>」子目录；也可以自己挑个别的目录 |
 | **断点续传** | 断网、关窗口、点暂停 —— 重开从断处继续，已下的部分不浪费 |
 | **智能跳过** | 已下完的文件绝不重复下载（见下方原理） |
+| **校验文件自动生成** | 下载完后立刻算 SHA-256，每个分组目录里写一份 `_checksums.sha256.txt`，可用 `sha256sum -c` 验真 |
+| **独立校验小工具** | 「校验哈希」Tab 里可单选/多选文件/文件夹，算 SHA-256 / MD5，可写校验文件 |
 | **导出链接清单** | 一键导出 **TXT** 或 **Excel（.xlsx）**，含分组/标题/链接 |
 | **暂停 / 继续 / 停止** | 随时可控，暂停立即生效 |
 | **并发可调** | 1 / 2 / 4 / 6 / 8 / 12 |
@@ -180,6 +182,8 @@ https://example.com/files/硬件描述.pdf
 7. **折叠失效因为 class 加错位置** —— CSS 是 `.grp.cl .tk {display:none}`，但 onclick 把 `cl` 加到了内部 `.grp-h`。给外层 `.grp` 加 `cl` 才生效（同时给 `.grp-h` 加一份用于旋转箭头）。
 8. **HTMLInputElement.click() 提前 toggle** —— `cb.click()` 在 dispatchEvent **之前**已经把 `cb.checked` 翻转了，listener 看到的是 toggle 后状态；而真实鼠标点击，listener 看到的是 toggle 前状态。统一处理：在 `mousedown` 里记 `pre` + `shift`，在 `click` 里用记录的 pre 算 target，并 preventDefault 阻止 click 的默认 toggle。
 9. **`onchange` 不带 modifier** —— Shift 键状态只能从 `mousedown/click` 拿到，`onchange` 事件的 `ev.shiftKey` 永远是 undefined。
+10. **MD5 填充长度算错** —— 早期版本用 `padLen = (len<56) ? 56-len : 120-len`，对 `len >= 120` 会算出**负数**直接崩溃。正确公式：`z = (55 - (len & 63) + 64) & 63`，`padLen = 1 + z`。这是 RFC 1321 的标准填充边界，漏算 len=56/120 这类临界点很容易踩。
+11. **大文件经 CDP 传 Array 会 OOM** —— Playwright 的 `exposeFunction` 把 JS 数组经 JSON 序列化跨进程传，2MB 的 PDF 转成 200 万元素的数组会撑爆 Node（实测 segfault）。改成 `__fs_read` 返回 base64 字符串，浏览器侧 `atob` 解码，大文件也安全。
 
 ## 常见问题
 

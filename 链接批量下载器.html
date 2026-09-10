@@ -162,6 +162,48 @@ details.help{margin-top:13px;font-size:12.5px;color:var(--tx2)}
 details.help summary{cursor:pointer;color:var(--pri);user-select:none}
 details.help div{margin-top:8px;padding:11px 14px;background:#f8fafc;border-radius:7px;
   border:1px solid var(--line2);line-height:1.75}
+
+/* ---------- tabs ---------- */
+.tabs{display:flex;align-items:center;gap:6px;margin:0 0 16px;padding:0 4px;
+  border-bottom:1px solid var(--line)}
+.tab{padding:9px 16px;font-size:13.5px;background:transparent;border:none;border-bottom:2px solid transparent;
+  color:var(--tx2);cursor:pointer;transition:all .15s;font-weight:500;letter-spacing:.1px}
+.tab:hover{color:var(--tx)}
+.tab.on{color:var(--pri);border-bottom-color:var(--pri);font-weight:600}
+.tab-tip{margin-left:auto;padding-bottom:9px}
+.tab-panel{display:block}
+.tab-panel[style*="none"]{display:none}
+
+/* ---------- hash result ---------- */
+.hash-result{margin-top:18px;display:none}
+.hash-result.on{display:block}
+.hash-result .hsum{display:flex;align-items:center;gap:10px;padding:11px 14px;background:#f8fafc;
+  border:1px solid var(--line);border-radius:8px;margin-bottom:6px;font-family:ui-monospace,Consolas,monospace;
+  font-size:12.5px;flex-wrap:wrap}
+.hash-result .hsum .al{color:var(--pri);font-weight:600;flex:0 0 76px}
+.hash-result .hsum .hv{flex:1;min-width:0;color:var(--tx);overflow-wrap:anywhere}
+.hash-result .hsum button{padding:4px 11px;font-size:11.5px;border:1px solid var(--line);background:#fff;
+  border-radius:5px;color:var(--tx2);cursor:pointer}
+.hash-result .hsum button:hover{border-color:var(--pri);color:var(--pri)}
+.hash-result .htable{margin-top:14px;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.hash-result .htable .rh{display:grid;grid-template-columns:1fr 220px 220px 90px;background:#f8fafc;
+  border-bottom:1px solid var(--line);font-size:12px;color:var(--tx2);font-weight:600}
+.hash-result .htable .rh div,.hash-result .htable .rd div{padding:9px 13px;border-right:1px solid var(--line2)}
+.hash-result .htable .rh div:last-child,.hash-result .htable .rd div:last-child{border-right:none}
+.hash-result .htable .rd{display:grid;grid-template-columns:1fr 220px 220px 90px;font-size:12px;
+  border-bottom:1px solid var(--line2);font-family:ui-monospace,Consolas,monospace;align-items:center}
+.hash-result .htable .rd:last-child{border-bottom:none}
+.hash-result .htable .rd .nm{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--tx)}
+.hash-result .htable .rd .hv{color:var(--tx2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11.5px}
+.hash-result .htable .rd .sz{color:var(--tx3);font-variant-numeric:tabular-nums}
+.hash-result .htable .rd.err .nm{color:var(--err)}
+.hash-result .htable .rd.run{background:#fafbfd}
+.hash-result .htable .rd .sp{display:inline-block;width:11px;height:11px;border:1.5px solid var(--line);
+  border-top-color:var(--pri);border-radius:50%;animation:sp .7s linear infinite;vertical-align:-1px;margin-right:5px}
+.hash-result .prog{margin-top:14px;padding:10px 14px;background:#f8fafc;border:1px solid var(--line);
+  border-radius:7px;font-size:12.5px;color:var(--tx2);display:flex;align-items:center;gap:9px}
+.hash-result .prog .pbar{flex:1;height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.hash-result .prog .pbar i{display:block;height:100%;background:var(--pri);width:0;transition:width .25s}
 </style>
 </head>
 <body data-page-node-id="DlUVkubKRZaV3DUpoDAiya">
@@ -180,6 +222,16 @@ details.help div{margin-top:8px;padding:11px 14px;background:#f8fafc;border-radi
 <div class="wrap" data-page-node-id="bhYMAsHLb4Ns6JhGKDB0Bp">
 
   <div id="notices" data-page-node-id="ZVwAXzgyH16sbw7F8yutMT"></div>
+
+  <!-- Tab 切换 -->
+  <div class="tabs" data-page-node-id="TABS00pxBJcRpqM3ON59JcBd">
+    <button class="tab on" data-tab="dl" data-page-node-id="TABDL00pxBJcRpqM3ON59JcBd">📥 批量下载</button>
+    <button class="tab" data-tab="hash" data-page-node-id="TABHS00pxBJcRpqM3ON59JcBd">🔒 校验哈希</button>
+    <span class="muted tab-tip" data-page-node-id="TABTIP00pxBJcRpqM3ON59JcBd">独立工具：可选择本地任意文件/文件夹算 SHA-256 / MD5</span>
+  </div>
+
+  <!-- 下载 Tab 内容 -->
+  <div id="tabDl" class="tab-panel" data-page-node-id="TABDLPNL00pxBJcRpqM3ON59JcBd">
 
   <!-- 步骤 1 -->
   <div class="card" data-page-node-id="UopVp9DRKQACeyKqxoHHDO">
@@ -207,6 +259,7 @@ details.help div{margin-top:8px;padding:11px 14px;background:#f8fafc;border-radi
           <option value="skip" data-page-node-id="zh0ykeVsLxak5mz4QwTEIu">跳过</option>
           <option value="over" data-page-node-id="N3dqmiGOPElTbWutc3w6tI">重新下载</option>
         </select></label>
+        <label title="下载完成后立刻算 SHA-256（GPU 加速，几十 MB 文件 <1 秒）" data-page-node-id="OPTSHA00pxBJcRpqM3ON59JcBd"><input type="checkbox" id="optHashSha" checked data-page-node-id="OPTSHABX00pxBJcRpqM3ON59JcBd"> 算 SHA-256（写入下载目录）</label>
       </div>
       <div style="margin-top:14px" data-page-node-id="AC00pxBJcRpqM3ON59JcBe">
         <button id="btnScan" class="pri" data-page-node-id="dhdnvrGDucCyHaF08vjyXo">扫描链接</button>
@@ -256,6 +309,7 @@ details.help div{margin-top:8px;padding:11px 14px;background:#f8fafc;border-radi
         <option data-page-node-id="YAZEHVxGvMvU6KqwD7YJRN">6</option><option data-page-node-id="4X174JXHAAgP8QFeMdJjjd">8</option><option data-page-node-id="EnY63uDDHvXkUx09EvT5u4">12</option>
       </select></label>
       <div class="grow" data-page-node-id="D44PRjMfVWJL6YF1XHGBFB"></div>
+      <button class="sm" id="btnExpSha" title="把所有已算的 SHA-256 写到每个分组目录下的 _checksums.sha256.txt" data-page-node-id="EXPSHA00pxBJcRpqM3ON59JcBd">导出 SHA-256</button>
       <button class="sm" id="btnExpTxt" data-page-node-id="WSyEei2lj3rXfom7tpzDng">导出 TXT</button>
       <button class="sm" id="btnExpXlsx" data-page-node-id="xUXfkrlCOTowBIvel4s9yj">导出 Excel</button>
     </div>
@@ -282,7 +336,43 @@ details.help div{margin-top:8px;padding:11px 14px;background:#f8fafc;border-radi
     </div>
   </div>
 
-</div>
+  </div><!-- /#tabDl -->
+
+  <!-- 校验哈希 Tab -->
+  <div id="tabHash" class="tab-panel" style="display:none" data-page-node-id="TABHSHNL00pxBJcRpqM3ON59JcBd">
+    <div class="card" data-page-node-id="HASHCARD00pxBJcRpqM3ON59JcBd">
+      <div class="card-h" data-page-node-id="HASHCARDH00pxBJcRpqM3ON59JcBd">
+        <div class="n" data-page-node-id="HASHCARDHN00pxBJcRpqM3ON59JcBd">🔒</div>
+        <h2 data-page-node-id="HASHCARDH200pxBJcRpqM3ON59JcBd">文件 / 文件夹 哈希校验</h2>
+        <span class="tip" data-page-node-id="HASHCARDHTP00pxBJcRpqM3ON59JcBd">纯前端，可对本地任意文件/文件夹算 SHA-256 / MD5</span>
+      </div>
+      <div class="card-b" data-page-node-id="HASHCARDB00pxBJcRpqM3ON59JcBd">
+        <div class="pathbox" data-page-node-id="HASHFILE00pxBJcRpqM3ON59JcBd">
+          <span class="lbl" data-page-node-id="HASHFILELBL00pxBJcRpqM3ON59JcBd">选 文件</span>
+          <input id="hashPathFile" placeholder="点右侧「浏览文件」选一个本地文件" readonly data-page-node-id="HASHPATHFILE00pxBJcRpqM3ON59JcBd">
+          <button id="btnHashFile" data-page-node-id="HASHPATHFILEBTN00pxBJcRpqM3ON59JcBd">浏览文件…</button>
+        </div>
+        <div class="pathbox" data-page-node-id="HASHFOLDER00pxBJcRpqM3ON59JcBd">
+          <span class="lbl" data-page-node-id="HASHFOLDERLBL00pxBJcRpqM3ON59JcBd">选 文件夹</span>
+          <input id="hashPathFolder" placeholder="点右侧「浏览文件夹」选一个本地文件夹（会递归所有文件）" readonly data-page-node-id="HASHPATHFLD00pxBJcRpqM3ON59JcBd">
+          <button id="btnHashFolder" data-page-node-id="HASHPATHFLDBTN00pxBJcRpqM3ON59JcBd">浏览文件夹…</button>
+        </div>
+        <div class="opts" data-page-node-id="HASHOPTS00pxBJcRpqM3ON59JcBd">
+          <label data-page-node-id="HASHOPTSHA00pxBJcRpqM3ON59JcBd"><input type="checkbox" id="hashAlgoSha" checked data-page-node-id="HASHSHA00pxBJcRpqM3ON59JcBd"> SHA-256</label>
+          <label data-page-node-id="HASHOPTMD500pxBJcRpqM3ON59JcBd"><input type="checkbox" id="hashAlgoMd5" data-page-node-id="HASHMD500pxBJcRpqM3ON59JcBd"> MD5（仅 <100MB）</label>
+          <label data-page-node-id="HASHOPTWRITE00pxBJcRpqM3ON59JcBd"><input type="checkbox" id="hashWriteFile" checked data-page-node-id="HASHWRITE00pxBJcRpqM3ON59JcBd"> 文件夹模式下写 _checksums.sha256.txt</label>
+        </div>
+        <div style="margin-top:14px" data-page-node-id="HASHACT00pxBJcRpqM3ON59JcBd">
+          <button id="btnHashCalc" class="pri" disabled data-page-node-id="HASHCALCB00pxBJcRpqM3ON59JcBd">开始计算</button>
+          <button id="btnHashReset" class="sm" data-page-node-id="HASHRESET00pxBJcRpqM3ON59JcBd">清空</button>
+          <span class="muted" style="margin-left:10px" id="hashHint" data-page-node-id="HASHHINT00pxBJcRpqM3ON59JcBd">先选择文件或文件夹</span>
+        </div>
+        <div id="hashResult" class="hash-result" data-page-node-id="HASHRES00pxBJcRpqM3ON59JcBd"></div>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /.wrap -->
 
 <script>
 'use strict';
@@ -362,6 +452,89 @@ function extFromMime(ct){
   return MIME_EXT[ct] || '';
 }
 
+/* ============================================================
+   1.5 哈希计算（SHA-256 用浏览器原生 SubtleCrypto；MD5 用紧凑纯 JS）
+   ============================================================ */
+function bufToHex(buf){
+  var u8 = new Uint8Array(buf);
+  var hex = '';
+  for(var i=0;i<u8.length;i++) hex += u8[i].toString(16).padStart(2,'0');
+  return hex;
+}
+async function sha256Of(file){
+  var ab = await file.arrayBuffer();
+  var d = await crypto.subtle.digest('SHA-256', ab);
+  return bufToHex(d);
+}
+
+// 紧凑 MD5（RFC 1321）—— 一次性读全部到内存算。
+// 浏览器 SubtleCrypto 不支持 MD5，只能纯 JS 实现；超过 100MB 的文件建议改用 SHA-256。
+var MD5 = (function(){
+  function add32(a, b){ return (a + b) | 0; }
+  function rol(n, c){ return (n << c) | (n >>> (32 - c)); }
+  function cmn(q, a, b, x, s, t){ return add32(rol(add32(add32(a, q), add32(x, t)), s), b); }
+  function ff(a,b,c,d,x,s,t){ return cmn((b & c) | ((~b) & d), a, b, x, s, t); }
+  function gg(a,b,c,d,x,s,t){ return cmn((b & d) | (c & (~d)), a, b, x, s, t); }
+  function hh(a,b,c,d,x,s,t){ return cmn(b ^ c ^ d, a, b, x, s, t); }
+  function ii(a,b,c,d,x,s,t){ return cmn(c ^ (b | (~d)), a, b, x, s, t); }
+  function fromAB(ab){
+    var u8 = new Uint8Array(ab), len = u8.length;
+    // RFC 1321 填充：补 0x80 + z 个 0x00 + 8 字节长度，使总长 ≡ 0 (mod 64)
+    // z = (55 - len) mod 64
+    var z = (55 - (len & 63) + 64) & 63;
+    var padLen = 1 + z;                       // 0x80 那一位也算进去
+    var buf = new Uint8Array(len + padLen + 8);
+    buf.set(u8, 0);
+    buf[len] = 0x80;
+    var bitsLo = (len * 8) >>> 0;
+    var bitsHi = Math.floor(len / 0x20000000) >>> 0;
+    buf[buf.length - 8] = bitsLo & 0xff;
+    buf[buf.length - 7] = (bitsLo >>> 8) & 0xff;
+    buf[buf.length - 6] = (bitsLo >>> 16) & 0xff;
+    buf[buf.length - 5] = (bitsLo >>> 24) & 0xff;
+    buf[buf.length - 4] = bitsHi & 0xff;
+    buf[buf.length - 3] = (bitsHi >>> 8) & 0xff;
+    buf[buf.length - 2] = (bitsHi >>> 16) & 0xff;
+    buf[buf.length - 1] = (bitsHi >>> 24) & 0xff;
+    var a=1732584193, b=-271733879, c=-1732584194, d=271733878;
+    var x = new Int32Array(16);
+    for(var j=0;j<buf.length;j+=64){
+      for(var k=0;k<16;k++){
+        var o = j + k * 4;
+        x[k] = (buf[o]) | (buf[o+1]<<8) | (buf[o+2]<<16) | (buf[o+3]<<24);
+      }
+      var oa=a, ob=b, oc=c, od=d;
+      a=ff(a,b,c,d,x[ 0], 7,-680876936); d=ff(d,a,b,c,x[ 1],12,-389564586); c=ff(c,d,a,b,x[ 2],17, 606105819); b=ff(b,c,d,a,x[ 3],22,-1044525330);
+      a=ff(a,b,c,d,x[ 4], 7,-176418897); d=ff(d,a,b,c,x[ 5],12, 1200080426); c=ff(c,d,a,b,x[ 6],17,-1473231341); b=ff(b,c,d,a,x[ 7],22,-45705983);
+      a=ff(a,b,c,d,x[ 8], 7, 1770035416); d=ff(d,a,b,c,x[ 9],12,-1958414417); c=ff(c,d,a,b,x[10],17,-42063);       b=ff(b,c,d,a,x[11],22,-1990404162);
+      a=ff(a,b,c,d,x[12], 7, 1804603682); d=ff(d,a,b,c,x[13],12,-40341101);  c=ff(c,d,a,b,x[14],17,-1502002290);  b=ff(b,c,d,a,x[15],22, 1236535329);
+      a=gg(a,b,c,d,x[ 1], 5,-165796510); d=gg(d,a,b,c,x[ 6], 9,-1069501632); c=gg(c,d,a,b,x[11],14, 643717713); b=gg(b,c,d,a,x[ 0],20,-373897302);
+      a=gg(a,b,c,d,x[ 5], 5,-701558691); d=gg(d,a,b,c,x[10], 9, 38016083);  c=gg(c,d,a,b,x[15],14,-660478335); b=gg(b,c,d,a,x[ 4],20,-405537848);
+      a=gg(a,b,c,d,x[ 9], 5, 568446438); d=gg(d,a,b,c,x[14], 9,-1019803690); c=gg(c,d,a,b,x[ 3],14,-187363961);  b=gg(b,c,d,a,x[ 8],20, 1163531501);
+      a=gg(a,b,c,d,x[13], 5,-1444681467); d=gg(d,a,b,c,x[ 2], 9,-51403784);  c=gg(c,d,a,b,x[ 7],14, 1735328473); b=gg(b,c,d,a,x[12],20,-1926607734);
+      a=hh(a,b,c,d,x[ 5], 4,-378558); d=hh(d,a,b,c,x[ 8],11,-2022574463); c=hh(c,d,a,b,x[11],16, 1839030562); b=hh(b,c,d,a,x[14],23,-35309556);
+      a=hh(a,b,c,d,x[ 1], 4,-1530992060); d=hh(d,a,b,c,x[ 4],11, 1272893353); c=hh(c,d,a,b,x[ 7],16,-155497632); b=hh(b,c,d,a,x[10],23,-1094730640);
+      a=hh(a,b,c,d,x[13], 4, 681279174); d=hh(d,a,b,c,x[ 0],11,-358537222); c=hh(c,d,a,b,x[ 3],16,-722521979); b=hh(b,c,d,a,x[ 6],23, 76029189);
+      a=hh(a,b,c,d,x[ 9], 4,-640364487); d=hh(d,a,b,c,x[12],11,-421815835); c=hh(c,d,a,b,x[15],16, 530742520); b=hh(b,c,d,a,x[ 2],23,-995338651);
+      a=ii(a,b,c,d,x[ 0], 6,-198630844); d=ii(d,a,b,c,x[ 7],10, 1126891415); c=ii(c,d,a,b,x[14],15,-1416354905); b=ii(b,c,d,a,x[ 5],21,-57434055);
+      a=ii(a,b,c,d,x[12], 6, 1700485571); d=ii(d,a,b,c,x[ 3],10,-1894986606); c=ii(c,d,a,b,x[10],15,-1051523);    b=ii(b,c,d,a,x[ 1],21,-2054922799);
+      a=ii(a,b,c,d,x[ 8], 6, 1873313359); d=ii(d,a,b,c,x[15],10,-30611744);  c=ii(c,d,a,b,x[ 6],15,-1560198380); b=ii(b,c,d,a,x[13],21, 1309151649);
+      a=ii(a,b,c,d,x[ 4], 6,-145523070); d=ii(d,a,b,c,x[11],10,-1120210379); c=ii(c,d,a,b,x[ 2],15, 718787259);  b=ii(b,c,d,a,x[ 9],21,-343485551);
+      a=add32(a,oa); b=add32(b,ob); c=add32(c,oc); d=add32(d,od);
+    }
+    return bufToHex(new Uint8Array(new Int32Array([a,b,c,d]).buffer));
+  }
+  return { fromAB: fromAB };
+})();
+
+// MD5 单文件算：>100MB 跳过并提示（避免 OOM / 卡顿）
+async function md5OfFile(file){
+  if(file.size > 100 * 1024 * 1024){
+    throw new Error('文件 ' + fmtSize(file.size) + ' 超过 100MB，请改用 SHA-256');
+  }
+  var ab = await file.arrayBuffer();
+  return MD5.fromAB(ab);
+}
 /* ============================================================
    2. 解析 txt
    ============================================================ */
@@ -446,7 +619,8 @@ var S = {
   outHandle:null, outPath:'', outIsDefault:true,   // 下载目录（默认 = rootHandle）
   groups:[],            // {name, path, dirHandle, outName, tasks:[], collapsed}
   running:false, paused:false, abort:null,
-  bytes:0, startedAt:0, lastBytes:0, lastTs:0, speed:0
+  bytes:0, startedAt:0, lastBytes:0, lastTs:0, speed:0,
+  curTab:'dl'
 };
 var TASKS = [];         // 扁平数组，便于并发调度
 window.TASKS = TASKS;   // 测试用
@@ -678,32 +852,17 @@ function render(){
         '<span class="st wait">等待</span>';
       var cb = r.querySelector('input');
       // —— 单击 checkbox 处理（含 Shift 范围选择）——
-      // 真实点击 vs 程序 cb.click() 行为不同：
-      //   真实点击：mousedown→mouseup→click 派发，cb.checked 在 click listener 里还是 pre-toggle 状态
-      //   cb.click()：浏览器先 toggle cb.checked，再派发 click event
-      // 解决：用 mousedown 记录 pre-state；click 派发时根据 _mdFired 决定 target 来自哪。
+      // 真实鼠标点击路径：mousedown→mouseup→click，浏览器原生 toggle 是在 click 之后才发生的（即使 click handler 里 preventDefault，
+      // Chrome 仍然在 click handler 之前先 toggle cb.checked —— 实测发现 preventDefault 在 click 阶段并不能阻止 toggle，
+      // 因为 toggle 是「input」的默认行为，不是「click」的默认行为）。
+      //
+      // 最稳的方案：在 mousedown 阶段 preventDefault + 自己完全控制 toggle + 状态同步。
       cb.addEventListener('mousedown', function(ev){
         if(ev.button !== 0) return;
-        cb._mdFired = true;
-        cb._preChecked = cb.checked;
-        cb._shiftOnDown = ev.shiftKey;
-      });
-      cb.onclick = function(ev){
-        ev.stopPropagation();
-        ev.preventDefault();
-        var shift, target;
-        if(cb._mdFired){
-          // 真实点击路径：用 mousedown 时记录的 pre-state
-          shift = !!cb._shiftOnDown;
-          target = !cb._preChecked;
-          cb.checked = target;
-        }else{
-          // 程序 cb.click() 路径：浏览器已经 toggle，cb.checked 是新状态
-          shift = !!ev.shiftKey;
-          target = cb.checked;
-        }
-        cb._mdFired = false;
-        cb._shiftOnDown = false;
+        ev.preventDefault();   // 阻止默认：原生 toggle + focus + 文本选中
+        var shift = !!ev.shiftKey;
+        var target = !cb.checked;     // 用户期望的新状态
+        cb.checked = target;
         if(shift){
           var anchor = MS.anchor;
           if(anchor == null){
@@ -722,7 +881,11 @@ function render(){
           MS.anchor = ti;
         }
         updateSummary(true);
-      };
+      });
+      // 阻止 click 的默认行为（防止原生 toggle 把 cb.checked 改回来）。
+      // 注意：mousedown 已经 preventDefault，但 Chromium 仍然派发 click 事件，
+      // 并且 click 的默认行为（toggle cb.checked）仍会执行 —— 必须在这里再 preventDefault。
+      cb.onclick = function(ev){ ev.stopPropagation(); ev.preventDefault(); };
       // —— 拖拽多选 ——
       r.addEventListener('mousedown', function(ev){
         // 只响应"非 input 上"的左键；中右键/复选框单独走自己的逻辑
@@ -805,8 +968,33 @@ function paintTask(t){
   else t.elBar.style.background = 'var(--pri)';
   t.elPct.textContent = (t.total||t.loaded) ? (st==='ok'||st==='skip' ? '100%' : pct+'%') : '';
   t.elSz.textContent = t.total ? fmtSize(t.total) : (t.loaded ? fmtSize(t.loaded) : '');
+  // 状态文字（独立 text node，不带 HTML，方便读取和测试）
+  var stText = st === 'fail' ? '失败' : (ST_TEXT[st] || '');
+  if(!t._stText){
+    t._stText = document.createTextNode(stText);
+    t.elSt.appendChild(t._stText);
+  }else{
+    t._stText.nodeValue = stText;
+  }
+  // SHA-256 标记作为独立 .sha-mark 子元素，避免污染 textContent
+  if(!t._shaMark){
+    t._shaMark = document.createElement('span');
+    t._shaMark.className = 'sha-mark';
+    t._shaMark.style.marginLeft = '4px';
+    t.elSt.appendChild(t._shaMark);
+  }
+  if(st === 'ok' || st === 'skip'){
+    if(t.hashSha256){
+      t._shaMark.innerHTML = '<span title="SHA-256: '+esc(t.hashSha256)+'" style="color:var(--ok);font-weight:600">✓SHA</span>';
+    }else if(t.hashErr){
+      t._shaMark.innerHTML = '<span title="'+esc(t.hashErr)+'" style="color:var(--warn);font-weight:600">!SHA</span>';
+    }else{
+      t._shaMark.innerHTML = '<span class="sp" title="SHA-256 计算中…"></span>';
+    }
+  }else{
+    t._shaMark.innerHTML = '';
+  }
   t.elSt.className = 'st ' + st;
-  t.elSt.textContent = st === 'fail' ? '失败' : (ST_TEXT[st] || '');
   if(st === 'fail' && t.err) t.elSt.title = t.err;
 }
 
@@ -990,7 +1178,45 @@ async function downloadTask(t){
 
   if(total && t.loaded !== total) throw new Error('大小不符 ' + t.loaded + '/' + total);
   t.status = 'ok'; paintTask(t);
+
+  // 异步算 SHA-256（用户勾选了「算 SHA-256」时）；不阻塞当前返回
+  if($('optHashSha').checked){
+    computeHashAsync(t, fh);
+  }
   return 'ok';
+}
+
+// 异步算 SHA-256，结果存到 t.hashSha256 + t.hashSize
+async function computeHashAsync(t, fh){
+  try{
+    var file = await fh.getFile();
+    t.hashSha256 = await sha256Of(file);
+    t.hashSize = file.size;
+    paintTask(t);    // 状态栏的「完成」图标后追加勾选标记
+  }catch(e){
+    t.hashErr = e.message || String(e);
+    paintTask(t);
+  }
+}
+
+// 把 g 的所有已算哈希写到 g.outHandle 下的 _checksums.sha256.txt（标准 sha256sum 格式）
+async function writeChecksums(g){
+  var lines = ['# SHA-256 校验和（由 链接批量下载器 生成）'];
+  lines.push('# 生成时间：' + new Date().toLocaleString('zh-CN'));
+  var n = 0;
+  g.tasks.forEach(function(t){
+    if(t.hashSha256){
+      // 文件名带空格时也安全（双星号模式是文件路径，无空格也没事）
+      lines.push(t.hashSha256 + '  ' + t.filename);
+      n++;
+    }
+  });
+  if(!n){ return { ok:false, n:0 }; }
+  var fh = await g.outHandle.getFileHandle('_checksums.sha256.txt', {create:true});
+  var w = await fh.createWritable();
+  await w.write(lines.join('\n') + '\n');
+  await w.close();
+  return { ok:true, n:n, file:'_checksums.sha256.txt' };
 }
 
 $('btnStart').onclick = function(){
@@ -1100,6 +1326,32 @@ function saveBlob(blob, name){
   document.body.appendChild(a); a.click();
   setTimeout(function(){ URL.revokeObjectURL(u); a.remove(); }, 400);
 }
+
+// 导出 SHA-256：把每个分组里所有已算 hash 的任务写到对应输出目录的 _checksums.sha256.txt
+$('btnExpSha').onclick = async function(){
+  if(!S.groups.length){ notice('warn','没有可导出的分组。'); return; }
+  var total = 0, files = [];
+  for(var i=0;i<S.groups.length;i++){
+    var g = S.groups[i];
+    if(!g.outHandle){ continue; }
+    var have = g.tasks.filter(function(t){ return t.hashSha256; }).length;
+    if(!have){ continue; }
+    try{
+      var r = await writeChecksums(g);
+      if(r.ok){
+        total += r.n;
+        files.push(g.outName + '\\' + r.file + '  (' + r.n + ' 条)');
+      }
+    }catch(e){
+      notice('warn','写入 ' + g.outName + ' 失败：' + (e.message || e));
+    }
+  }
+  if(total === 0){
+    notice('warn','没有已算好的 SHA-256。请先在下载时勾选「算 SHA-256」并下载完成。');
+    return;
+  }
+  notice('info','已写入 ' + total + ' 条 SHA-256 到：<br>' + files.map(esc).join('<br>'));
+};
 
 $('btnExpTxt').onclick = function(){
   var lines = [];
@@ -1281,7 +1533,260 @@ $('btnExpXlsx').onclick = async function(){
 };
 
 /* ============================================================
-   8. 启动
+   8. Tab 切换 + 独立校验工具
+   ============================================================ */
+document.querySelectorAll('.tab').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var tab = btn.dataset.tab;
+    document.querySelectorAll('.tab').forEach(function(b){ b.classList.toggle('on', b.dataset.tab === tab); });
+    document.getElementById('tabDl').style.display = (tab === 'dl') ? '' : 'none';
+    document.getElementById('tabHash').style.display = (tab === 'hash') ? '' : 'none';
+    S.curTab = tab;
+  });
+});
+
+// ============ 独立校验工具 ============
+var HashUI = {
+  fileHandle: null, fileName: '', fileSize: 0,
+  folderHandle: null, folderName: '',
+  busy: false,
+  results: []   // [{name, size, sha, md5, err}]
+};
+
+$('btnHashFile').onclick = async function(){
+  if(!FS_OK){ notice('err','浏览器不支持，请用 Chrome / Edge。'); return; }
+  try{
+    var handles = await window.showOpenFilePicker({ multiple:false });
+    if(!handles || !handles.length) return;
+    HashUI.fileHandle = handles[0];
+    HashUI.fileName = handles[0].name;
+    $('hashPathFile').value = HashUI.fileName;
+    HashUI.folderHandle = null;
+    $('hashPathFolder').value = '';
+    HashUI.folderName = '';
+    HashUI.busy = false;
+    $('btnHashCalc').disabled = false;
+    $('hashHint').textContent = '已选文件：' + HashUI.fileName;
+    $('hashResult').classList.remove('on');
+    $('hashResult').innerHTML = '';
+  }catch(e){
+    if(e.name !== 'AbortError') notice('err','选择文件失败：' + esc(e.message));
+  }
+};
+
+$('btnHashFolder').onclick = async function(){
+  if(!FS_OK){ notice('err','浏览器不支持，请用 Chrome / Edge。'); return; }
+  try{
+    var h = await window.showDirectoryPicker({ id:'hash-folder', mode:'read' });
+    HashUI.folderHandle = h;
+    HashUI.folderName = h.name;
+    $('hashPathFolder').value = h.name + '\\';
+    HashUI.fileHandle = null;
+    HashUI.fileName = '';
+    $('hashPathFile').value = '';
+    HashUI.busy = false;
+    $('btnHashCalc').disabled = false;
+    $('hashHint').textContent = '已选文件夹：' + h.name + '（将递归所有文件）';
+    $('hashResult').classList.remove('on');
+    $('hashResult').innerHTML = '';
+  }catch(e){
+    if(e.name !== 'AbortError') notice('err','选择文件夹失败：' + esc(e.message));
+  }
+};
+
+$('btnHashReset').onclick = function(){
+  HashUI.fileHandle = null;
+  HashUI.folderHandle = null;
+  HashUI.fileName = '';
+  HashUI.folderName = '';
+  $('hashPathFile').value = '';
+  $('hashPathFolder').value = '';
+  $('hashResult').classList.remove('on');
+  $('hashResult').innerHTML = '';
+  $('btnHashCalc').disabled = true;
+  $('hashHint').textContent = '先选择文件或文件夹';
+};
+
+$('btnHashCalc').onclick = async function(){
+  if(HashUI.busy) return;
+  if(!HashUI.fileHandle && !HashUI.folderHandle){ notice('warn','请先选择文件或文件夹。'); return; }
+  var wantSha = $('hashAlgoSha').checked;
+  var wantMd5 = $('hashAlgoMd5').checked;
+  if(!wantSha && !wantMd5){ notice('warn','至少选一个算法。'); return; }
+  HashUI.busy = true;
+  $('btnHashCalc').disabled = true;
+  HashUI.results = [];
+  var totalSize = 0, doneSize = 0;
+  var files = [];
+  try{
+    if(HashUI.fileHandle){
+      var f = await HashUI.fileHandle.getFile();
+      files.push({ handle:HashUI.fileHandle, name:HashUI.fileName, file:f });
+    }else{
+      files = await collectAllFiles(HashUI.folderHandle, '');
+    }
+    if(!files.length){
+      notice('warn','文件夹里没有文件。');
+      HashUI.busy = false; $('btnHashCalc').disabled = false;
+      return;
+    }
+    totalSize = files.reduce(function(s, x){ return s + x.file.size; }, 0);
+    renderHashTable(files, doneSize, totalSize);
+    for(var i=0;i<files.length;i++){
+      var x = files[i];
+      var row = { name:x.name, size:x.file.size, sha:null, md5:null, err:null, run:true };
+      HashUI.results[i] = row;
+      try{
+        if(wantSha){
+          row.sha = await sha256Of(x.file);
+          doneSize += x.file.size;
+          updateHashProgress(row, doneSize, totalSize);
+        }
+        if(wantMd5){
+          if(x.file.size > 100 * 1024 * 1024){
+            row.err = 'MD5 跳过（>100MB）';
+          }else{
+            row.md5 = await md5OfFile(x.file);
+            doneSize += x.file.size;
+            updateHashProgress(row, doneSize, totalSize);
+          }
+        }
+      }catch(e){
+        row.err = e.message || String(e);
+      }
+      row.run = false;
+      updateHashRow(i, row);
+    }
+    $('hashHint').textContent = '完成：' + files.length + ' 个文件';
+    // 写 _checksums.sha256.txt 到文件夹
+    if(HashUI.folderHandle && $('hashWriteFile').checked && wantSha){
+      var hasSha = HashUI.results.filter(function(r){ return r.sha; }).length;
+      if(hasSha){
+        try{
+          var fh = await HashUI.folderHandle.getFileHandle('_checksums.sha256.txt', {create:true});
+          var w = await fh.createWritable();
+          var lines = ['# SHA-256 校验和（由 链接批量下载器 生成）'];
+          lines.push('# 文件夹：' + HashUI.folderName + '\\');
+          lines.push('# 生成时间：' + new Date().toLocaleString('zh-CN'));
+          HashUI.results.forEach(function(r){
+            if(r.sha) lines.push(r.sha + '  ' + r.name);
+          });
+          await w.write(lines.join('\n') + '\n');
+          await w.close();
+          $('hashHint').textContent += '，已写 _checksums.sha256.txt';
+        }catch(e){
+          notice('warn','写入 _checksums.sha256.txt 失败：' + (e.message || e));
+        }
+      }
+    }
+  }catch(e){
+    notice('err','计算失败：' + esc(e.message || e));
+  }finally{
+    HashUI.busy = false;
+    $('btnHashCalc').disabled = false;
+  }
+};
+
+// 递归收集 handle 下所有文件
+async function collectAllFiles(dirHandle, prefix){
+  var out = [];
+  for await (var entry of dirHandle.values()){
+    if(entry.kind === 'file'){
+      try{
+        var f = await entry.getFile();
+        out.push({ handle:entry, name: prefix + entry.name, file:f });
+      }catch(e){}
+    }else if(entry.kind === 'directory'){
+      // 跳过 _checksums、node_modules、.git 这些常见干扰目录
+      if(/^(\.|node_modules|__pycache__|\$RECYCLE\.BIN|System Volume Information)/i.test(entry.name)) continue;
+      try{
+        var sub = await collectAllFiles(entry, prefix + entry.name + '\\');
+        out = out.concat(sub);
+      }catch(e){}
+    }
+  }
+  return out;
+}
+
+function renderHashTable(files, done, total){
+  var box = $('hashResult');
+  box.innerHTML = '';
+  box.classList.add('on');
+  // 顶部全局摘要（SHA-256 / MD5 整文件）
+  var summary = document.createElement('div');
+  summary.className = 'hsum';
+  summary.style.flexDirection = 'column';
+  summary.style.alignItems = 'stretch';
+  summary.innerHTML =
+    '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+    '  <span class="al" style="flex:0 0 76px;font-weight:600;color:var(--pri)">整体</span>' +
+    '  <span class="hv muted">共 <b>' + files.length + '</b> 个文件，<b>' + fmtSize(total) + '</b></span>' +
+    '  <span id="hashProgressTxt" style="margin-left:auto"></span>' +
+    '</div>' +
+    '<div class="prog" style="margin-top:9px">' +
+    '  <span class="sp"></span><span>计算中</span>' +
+    '  <div class="pbar"><i id="hashPbar"></i></div>' +
+    '</div>';
+  box.appendChild(summary);
+  // 表格
+  var t = document.createElement('div');
+  t.className = 'htable';
+  var rh = document.createElement('div');
+  rh.className = 'rh';
+  rh.innerHTML = '<div>文件名</div><div>SHA-256</div><div>MD5</div><div>大小</div>';
+  t.appendChild(rh);
+  for(var i=0;i<files.length;i++){
+    var r = document.createElement('div');
+    r.className = 'rd run';
+    r.id = 'hr' + i;
+    r.innerHTML =
+      '<div class="nm"><span class="sp"></span>' + esc(files[i].name) + '</div>' +
+      '<div class="hv" data-k="sha">…</div>' +
+      '<div class="hv" data-k="md5">' + ($('hashAlgoMd5').checked ? '…' : '—') + '</div>' +
+      '<div class="sz">' + fmtSize(files[i].file.size) + '</div>';
+    t.appendChild(r);
+  }
+  box.appendChild(t);
+}
+
+function updateHashProgress(row, done, total){
+  var pct = Math.min(100, Math.floor(done*100/total));
+  var bar = $('hashPbar'); if(bar) bar.style.width = pct + '%';
+  var txt = $('hashProgressTxt'); if(txt) txt.textContent = pct + '%  (' + fmtSize(done) + '/' + fmtSize(total) + ')';
+}
+
+function updateHashRow(i, row){
+  var el = $('hr' + i);
+  if(!el) return;
+  el.classList.toggle('run', !!row.run);
+  el.classList.toggle('err', !!row.err);
+  if(row.run){
+    // 还在算
+    var shaEl = el.querySelector('[data-k=sha]');
+    var md5El = el.querySelector('[data-k=md5]');
+    if(shaEl && !shaEl.dataset.did) shaEl.textContent = row.sha ? row.sha : '…';
+    if(md5El && !md5El.dataset.did && $('hashAlgoMd5').checked) md5El.textContent = row.md5 ? row.md5 : '…';
+  }else{
+    el.querySelector('.sp').outerHTML = (row.err ? '⚠' : (row.sha ? '✓' : '○'));
+    var shaEl = el.querySelector('[data-k=sha]');
+    var md5El = el.querySelector('[data-k=md5]');
+    if(shaEl){ shaEl.textContent = row.sha || '—'; shaEl.dataset.did = '1'; shaEl.title = row.sha || ''; }
+    if(md5El){ md5El.textContent = row.md5 || '—'; md5El.dataset.did = '1'; md5El.title = row.md5 || ''; }
+  }
+}
+
+// 复制摘要里某个 hash 到剪贴板
+function copyHash(txt, btn){
+  navigator.clipboard.writeText(txt).then(function(){
+    var old = btn.textContent; btn.textContent = '已复制'; setTimeout(function(){ btn.textContent = old; }, 1200);
+  }, function(){
+    notice('warn','复制失败，请手动复制');
+  });
+}
+window.copyHash = copyHash;
+
+/* ============================================================
+   9. 启动
    ============================================================ */
 if(location.protocol !== 'file:'){
   notice('info','当前通过 ' + location.protocol + '// 打开，功能正常。直接双击本文件用浏览器打开也可以。');
