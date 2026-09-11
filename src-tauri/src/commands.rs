@@ -124,15 +124,6 @@ pub fn detect_soffice() -> Option<String> {
     ])
 }
 
-fn bundled_tessdata() -> Option<PathBuf> {
-    let base = bundled_bin()?;
-    let p = base.join("tesseract").join("tessdata");
-    if p.is_dir() {
-        return Some(p);
-    }
-    None
-}
-
 fn user_tessdata() -> Option<PathBuf> {
     if let Ok(home) = std::env::var("USERPROFILE") {
         let p = PathBuf::from(home).join("tessdata");
@@ -150,12 +141,6 @@ fn user_tessdata() -> Option<PathBuf> {
 }
 
 fn preferred_tessdata() -> Option<PathBuf> {
-    // 优先软件自带（分发包里已含 chi_sim + eng）
-    if let Some(p) = bundled_tessdata() {
-        if p.join("eng.traineddata").is_file() || p.join("chi_sim.traineddata").is_file() {
-            return Some(p);
-        }
-    }
     if let Some(p) = user_tessdata() {
         return Some(p);
     }
@@ -163,14 +148,11 @@ fn preferred_tessdata() -> Option<PathBuf> {
 }
 
 pub fn detect_tesseract() -> Option<String> {
+    // 不再打包 Tesseract；仅检测用户是否自行安装
     if let Ok(p) = std::env::var("TESSERACT_PATH") {
         if Path::new(&p).is_file() {
             return Some(p);
         }
-    }
-    // 自带优先
-    if let Some(p) = bundled_tool("tesseract/tesseract.exe") {
-        return Some(p);
     }
     if let Some(p) = which("tesseract") {
         return Some(p);
@@ -378,15 +360,27 @@ pub fn ocr_tesseract(tesseract: String, path: String) -> Result<String, String> 
 
 #[tauri::command]
 pub fn ocr_image(path: String, tesseract: Option<String>) -> Result<String, String> {
-    if let Some(t) = tesseract.filter(|s| !s.is_empty()) {
-        if Path::new(&t).is_file() {
-            return ocr_tesseract(t, path);
+    // 默认 Windows 系统 OCR（安装包不带 Tesseract）；系统失败时再尝试本机已装的 Tesseract
+    let tess_path = tesseract
+        .filter(|s| !s.is_empty() && Path::new(s).is_file())
+        .or_else(detect_tesseract);
+
+    match ocr_image_powershell(path.clone()) {
+        Ok(text) => Ok(text),
+        Err(sys_err) => {
+            if let Some(t) = tess_path {
+                match ocr_tesseract(t, path) {
+                    Ok(t2) => Ok(t2),
+                    Err(e) => Err(format!("系统 OCR 失败：{}\nTesseract 失败：{}", sys_err, e)),
+                }
+            } else {
+                Err(format!(
+                    "{}\n（可在「桌面设置」安装可选 Tesseract 增强包，或在 Windows 设置中安装 OCR 语言包）",
+                    sys_err
+                ))
+            }
         }
     }
-    if let Some(t) = detect_tesseract() {
-        return ocr_tesseract(t, path);
-    }
-    ocr_image_powershell(path)
 }
 
 #[derive(Serialize)]

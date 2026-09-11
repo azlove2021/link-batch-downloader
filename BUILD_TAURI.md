@@ -55,18 +55,22 @@ npm run build
 
 ## 随安装包分发的依赖
 
-| 依赖 | 目录 | 用途 | 是否打进安装包 |
-|---|---|---|---|
-| **FFmpeg** | `resources/bin/ffmpeg/` | 音视频转码 | **是** |
-| **Tesseract + 中文/英文** | `resources/bin/tesseract/` | 图片 OCR | **是** |
-| **LibreOffice** | 系统安装 | Office → PDF | **否**（体积过大） |
+| 依赖 | 用途 | 是否打进安装包 |
+|---|---|---|
+| **FFmpeg（仅 ffmpeg.exe）** | 音视频转码 | **是** |
+| **Windows 系统 OCR** | 图片识别（PixPin 同类） | 无需打包 |
+| Tesseract | 更强离线 OCR | **否** — 应用内「增强组件」提供链接 |
+| LibreOffice | Office → PDF | **否** — 应用内提供链接 |
+| ffprobe | 探测 | **否**（精简包不带） |
 
-接收方若要用「Office → PDF」，需自行安装免费的 [LibreOffice](https://www.libreoffice.org/download/)。  
-其它功能（下载、PDF 编辑、加密、OCR、转码等）装完安装包即可用。
+打包前先准备内置 ffmpeg：
 
-`resources/bin/` 体积大，**默认不进 Git**。换机器重新打包前先跑 `fetch-bundled-deps.ps1`。
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts\fetch-bundled-deps.ps1
+npm run build
+```
 
-便携版：把安装目录整个文件夹拷走（必须带上 `resources\bin\`），或运行安装包。
+`resources/bin/` 默认 **不进 Git**；安装包会带上内置 ffmpeg。
 
 ## 首次构建可能较慢
 

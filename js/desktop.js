@@ -52,10 +52,12 @@ async function refreshEnv(){
     envCache = await invoke('env_status');
     var rows = [
       ['版本', envCache.app_version],
-      ['FFmpeg', envCache.ffmpeg ? (envCache.ffmpeg.indexOf('resources')>=0 || envCache.ffmpeg.indexOf('bin')>=0 ? envCache.ffmpeg + '（软件自带）' : envCache.ffmpeg) : '未找到 — 安装包应已内置；也可装 FFmpeg 并加入 PATH'],
-      ['ffprobe', envCache.ffprobe || '—'],
-      ['LibreOffice', envCache.soffice ? envCache.soffice : '未找到 — 未打进安装包（体积过大）。请到 libreoffice.org 自行安装后即可用 Office→PDF'],
-      ['Tesseract', envCache.tesseract ? (envCache.tesseract.indexOf('resources')>=0 || envCache.tesseract.indexOf('tesseract')>=0 ? envCache.tesseract + '（软件自带）' : envCache.tesseract) : '未找到']
+      ['FFmpeg（内置）', envCache.ffmpeg || '未找到 — 可重装软件或在「增强组件」下载完整版'],
+      ['ffprobe', envCache.ffprobe || '未内置（精简包）— 需要时在增强组件下载 FFmpeg 完整版'],
+      ['OCR 引擎', envCache.tesseract
+        ? ('系统 OCR + 已装 Tesseract：' + envCache.tesseract)
+        : '系统 Windows OCR（推荐）— 可选安装 Tesseract 增强'],
+      ['LibreOffice', envCache.soffice || '未找到 — 可选，在「增强组件」下载']
     ];
     box.innerHTML = rows.map(function(r){
       var warn = /未找到|未安装/.test(r[1]);
@@ -167,7 +169,7 @@ $('ocrRun').onclick = async function(){
       tesseract: (envCache && envCache.tesseract) || null
     });
     $('ocrOut').value = text || '(未识别到文字)';
-    notice('info','OCR 完成');
+    notice('info','OCR 完成（默认 Windows 系统识别）');
   }catch(e){
     notice('err','OCR 失败：' + esc(String(e.message || e).slice(0,220)));
     $('ocrOut').value = String(e.message || e);

@@ -15,16 +15,19 @@
 
 ### 桌面版（exe）
 
-- 推荐分发：`dist/办公工具箱_1.1.0_x64-setup.exe`（约 90MB，**已内置 FFmpeg + Tesseract 中文 OCR**）  
-- 便携：拷贝 `dist/portable/` 整个文件夹（含 `resources\bin\`），双击里面的 `办公工具箱.exe`
+- 推荐分发：`dist/办公工具箱_1.1.0_x64-setup.exe`（**精简包**，体积更小）  
+- 便携：拷贝 `dist/portable/` 整个文件夹（含 `resources\bin\`）
 
-桌面版额外提供：
+桌面版能力：
 
-- **系统托盘** / **右键菜单**
-- **音视频转码**（**安装包自带 FFmpeg**）
-- **图片 OCR**（**自带 Tesseract + 中文包**）
-- **Office → PDF**（需对方电脑安装免费 LibreOffice，安装包体积原因未内置）
-- **大文件清理**
+| 功能 | 依赖 |
+|---|---|
+| 音视频转码 | **内置 FFmpeg** |
+| 图片 OCR | **Windows 系统 OCR**（PixPin 同类；可选装 Tesseract 增强） |
+| Office → PDF | 可选安装 LibreOffice（应用内提供下载链接） |
+| 托盘 / 右键菜单 / 大文件清理 | 无额外依赖 |
+
+打开 **桌面设置 → 可选增强组件**，即可看到 Tesseract、LibreOffice、FFmpeg 完整版的官方下载链接。
 
 自己从源码打包见 **[BUILD_TAURI.md](BUILD_TAURI.md)**。
 

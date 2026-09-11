@@ -1506,6 +1506,55 @@
           </div>
         </div>
         <div class="card">
+          <div class="card-h"><h3>可选增强组件（按需下载）</h3></div>
+          <div class="card-b">
+            <p class="muted" style="margin-bottom:12px">
+              安装包为<strong>精简版</strong>：内置 FFmpeg（转码）与 Windows 系统 OCR（识别）。<br>
+              以下组件<strong>体积较大</strong>，未打进安装包。需要时点链接下载安装，装完回本页点「重新检测」即可增强能力。
+            </p>
+            <div class="rtable">
+              <table>
+                <thead><tr><th>组件</th><th>用途</th><th>体积约</th><th>下载</th></tr></thead>
+                <tbody>
+                  <tr>
+                    <td><b>Windows OCR 语言包</b></td>
+                    <td>系统识别中文/英文（优先用这个）</td>
+                    <td>系统自带</td>
+                    <td><a href="ms-settings:regionlanguage" target="_blank" rel="noopener">打开系统语言设置</a></td>
+                  </tr>
+                  <tr>
+                    <td><b>Tesseract OCR</b></td>
+                    <td>更强离线 OCR（可选增强）</td>
+                    <td>~60MB</td>
+                    <td>
+                      <a href="https://github.com/UB-Mannheim/tesseract/releases" target="_blank" rel="noopener">GitHub 官方版</a>
+                      ·
+                      <a href="https://github.com/tesseract-ocr/tessdata_fast/raw/main/chi_sim.traineddata" target="_blank" rel="noopener">中文语言包 chi_sim</a>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td><b>FFmpeg 完整版</b></td>
+                    <td>更多编解码/滤镜（装完后可覆盖内置）</td>
+                    <td>~120MB</td>
+                    <td><a href="https://www.gyan.dev/ffmpeg/builds/" target="_blank" rel="noopener">gyan.dev 官方构建</a></td>
+                  </tr>
+                  <tr>
+                    <td><b>LibreOffice</b></td>
+                    <td>Word / Excel / PPT → PDF</td>
+                    <td>~350MB</td>
+                    <td><a href="https://www.libreoffice.org/download/download-libreoffice/" target="_blank" rel="noopener">libreoffice.org</a></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="muted" style="margin-top:10px">
+              安装说明：Tesseract 建议保持默认路径 <span class="mono">C:\Program Files\Tesseract-OCR\</span>；
+              中文包下载后放到 Tesseract 的 <span class="mono">tessdata\</span> 目录（或用户目录 <span class="mono">%USERPROFILE%\tessdata\</span>）。
+              LibreOffice 装完无需配置，工具箱会自动检测。
+            </div>
+          </div>
+        </div>
+        <div class="card">
           <div class="card-h"><h3>托盘</h3></div>
           <div class="card-b">
             <p class="muted">安装桌面版后，程序会最小化到系统托盘：左键单击打开主窗口；托盘菜单含「打开主窗口 / 检测本机工具 / 退出」。</p>
@@ -1522,6 +1571,7 @@
             <div class="muted" id="ctxMsg" style="margin-top:10px"></div>
           </div>
         </div>
+      </section>
       </section>
 
     </div>
