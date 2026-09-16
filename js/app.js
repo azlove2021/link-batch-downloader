@@ -19,6 +19,7 @@ var $ = U.$, notice = U.notice;
 
 var TOOLS = [
   { id:'home', name:'工具总览', desc:'全部工具入口', k:'home 首页 总览 工具' },
+  { id:'data', name:'数据工作台', desc:'10万行CSV筛选、清洗、双表对账', k:'csv excel 数据 分析 清洗 对账 比对 表格 10万' },
   { id:'dl', name:'批量下载', desc:'扫 txt 清单，分目录批量下载，断点续传', k:'download 下载 链接 批量 txt' },
   { id:'hash', name:'哈希校验', desc:'文件/文件夹 SHA-256 / MD5', k:'hash sha md5 校验 摘要' },
   { id:'hcmp', name:'哈希对比', desc:'两文件或两段哈希是否一致', k:'hash compare 对比 一致 sha256' },
@@ -54,7 +55,7 @@ var TOOLS = [
 ];
 
 var ICONS = {
-  home:'🏠', dl:'📥', hash:'🔒', hcmp:'⚖️', rename:'✏️', text:'📝', json:'{}', sql:'SQL',
+  home:'🏠', data:'📊', dl:'📥', hash:'🔒', hcmp:'⚖️', rename:'✏️', text:'📝', json:'{}', sql:'SQL',
   encode:'🔐', regex:'🔍', diff:'±', convert:'🔄', image:'🖼️', crop:'✂️', stitch:'🔗',
   pdf:'📄', pdfcrypt:'🔏', md:'MD', invoice:'🧾', qr:'▣', color:'🎨', time:'⏱', rand:'🎲',
   calc:'🧮', tstat:'📏', jwt:'🪪', crypto:'🗝', outdir:'📂',

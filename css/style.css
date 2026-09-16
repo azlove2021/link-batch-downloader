@@ -354,3 +354,21 @@ details.help div{margin-top:8px;padding:11px 14px;background:#f8fafc;border-radi
 .md-prev img{max-width:100%}
 .md-prev ul,.md-prev ol{padding-left:1.4em;margin:.5em 0}
 .md-prev hr{border:none;border-top:1px solid var(--line);margin:1.2em 0}
+
+/* 数据工作台虚拟表格 */
+.dw-wrap{border:1px solid var(--line);border-radius:10px;overflow:hidden;background:#fff}
+.dw-head{background:#f8fafc;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:2}
+.dw-hrow{display:flex;align-items:stretch;min-width:max-content}
+.dw-hrow .dw-cell{flex:0 0 140px;min-width:140px;padding:8px 10px;font-size:12.5px;font-weight:600;color:var(--tx2);border-right:1px solid var(--line2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dw-hrow .dw-cell[data-sort]{cursor:pointer;user-select:none}
+.dw-hrow .dw-cell[data-sort]:hover{background:#eef2ff;color:var(--pri)}
+.dw-frow .dw-cell{padding:6px 8px}
+.dw-frow input{width:100%;padding:4px 6px;font-size:12px;border:1px solid var(--line);border-radius:6px}
+.dw-idx{flex:0 0 56px !important;min-width:56px !important;color:var(--tx3);text-align:right;font-variant-numeric:tabular-nums}
+.dw-scroll{height:520px;overflow:auto;position:relative}
+.dw-spacer{width:1px}
+.dw-canvas{position:absolute;left:0;right:0;top:0;will-change:transform}
+.dw-row{display:flex;align-items:stretch;height:28px;border-bottom:1px solid #f1f5f9;font-size:12.5px;min-width:max-content}
+.dw-row:hover{background:#f8fafc}
+.dw-row .dw-cell{flex:0 0 140px;min-width:140px;padding:5px 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-right:1px solid #f8fafc;font-family:ui-monospace,Consolas,monospace}
+.dw-row .dw-idx{flex:0 0 56px;min-width:56px;color:var(--tx3);text-align:right}

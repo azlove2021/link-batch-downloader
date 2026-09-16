@@ -30,7 +30,9 @@
     <a class="nav" data-tool="hcmp"><span class="ic">⚖️</span>哈希对比</a>
     <a class="nav" data-tool="rename"><span class="ic">✏️</span>批量重命名</a>
 
-    <div class="grp-t">文本处理</div>
+    <div class="grp-t">数据与表格</div>
+    <a class="nav" data-tool="data"><span class="ic">📊</span>数据工作台</a>
+    <a class="nav" data-tool="convert"><span class="ic">🔄</span>表格互转</a>
     <a class="nav" data-tool="text"><span class="ic">📝</span>文本处理</a>
     <a class="nav" data-tool="json"><span class="ic">{}</span>JSON 工具</a>
     <a class="nav" data-tool="sql"><span class="ic">SQL</span>SQL 格式化</a>
@@ -39,7 +41,6 @@
     <a class="nav" data-tool="diff"><span class="ic">±</span>文本对比</a>
 
     <div class="grp-t">格式转换</div>
-    <a class="nav" data-tool="convert"><span class="ic">🔄</span>表格互转</a>
     <a class="nav" data-tool="image"><span class="ic">🖼️</span>图片工具</a>
     <a class="nav" data-tool="crop"><span class="ic">✂️</span>图片裁剪</a>
     <a class="nav" data-tool="stitch"><span class="ic">🔗</span>长图拼接</a>
@@ -91,6 +92,112 @@
           <div class="muted" id="searchHint" style="margin-top:8px;display:none"></div>
         </div>
         <div class="dash" id="dashGrid"></div>
+      </section>
+
+      <!-- ========== 数据工作台 ========== -->
+      <section id="tool-data" class="tool">
+        <h2 class="th">数据工作台</h2>
+        <p class="td">面向数据分析 / 对账 / 资料整理：支持约 10 万行 CSV 流畅筛选、清洗、双表按主键比对导出。数据仅在本机处理。</p>
+        <div class="card">
+          <div class="card-h">
+            <h3>数据源</h3>
+            <span class="tip" id="dwFileName">未载入</span>
+            <div class="right">
+              <button class="sm" id="dwPick">选择 CSV / XLSX…</button>
+              <button class="sm" id="dwDemo">生成 10 万行演示</button>
+            </div>
+          </div>
+          <div class="card-b">
+            <div class="drop" id="dwDrop">
+              <b>拖入 CSV / TSV / XLSX</b><br>
+              <span class="muted">支持约 10 万行；大表用虚拟滚动，筛选不卡</span>
+            </div>
+            <input type="file" id="dwFile" accept=".csv,.tsv,.txt,.xlsx,.xlsm,.xls" style="display:none">
+            <div class="row" style="margin-top:10px">
+              <label class="inline grow">全局搜索
+                <input type="text" id="dwSearch" class="grow" placeholder="任意列包含…" style="min-width:160px">
+              </label>
+              <span class="muted" id="dwStat"></span>
+              <span class="muted" id="dwFtime"></span>
+              <button class="sm" id="dwResetFilter">重置筛选</button>
+              <button class="sm" id="dwExportView">导出当前视图 CSV</button>
+              <button class="sm" id="dwExportXlsx">导出 XLSX</button>
+            </div>
+            <div class="dw-wrap" style="margin-top:10px">
+              <div class="dw-head" id="dwHead"></div>
+              <div class="dw-scroll" id="dwScroll">
+                <div class="dw-spacer" id="dwSpacer"></div>
+                <div class="dw-canvas" id="dwCanvas"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h3>清洗</h3><span class="tip">对当前数据集生效</span></div>
+          <div class="card-b">
+            <div class="row mb">
+              <label class="inline">目标列
+                <select id="dwCleanCol" disabled></select>
+              </label>
+              <label class="inline">分隔符
+                <select id="dwSplitSep">
+                  <option value=",">逗号</option>
+                  <option value=";">分号</option>
+                  <option value="\t">Tab</option>
+                  <option value="|">竖线</option>
+                  <option value=" ">空格</option>
+                </select>
+              </label>
+              <label class="inline">合并另一列
+                <select id="dwCmpKey" disabled></select>
+              </label>
+            </div>
+            <div class="row">
+              <button class="sm" id="dwCleanTrim">去空格/压缩空白</button>
+              <button class="sm" id="dwCleanDedupe">整行去重</button>
+              <button class="sm" id="dwCleanDate">规范日期</button>
+              <button class="sm" id="dwCleanNum">金额去符号</button>
+              <button class="sm" id="dwCleanEmpty2dash">空值→—</button>
+              <button class="sm" id="dwCleanDropEmpty">删空行</button>
+              <button class="sm" id="dwSplit">按分隔符拆列</button>
+              <button class="sm" id="dwMerge">合并两列</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h3>双表比对（主键对账）</h3><span class="tip">例：工资表 vs 打款表</span></div>
+          <div class="card-b">
+            <div class="drop" id="dwCmpDrop">
+              <b>载入比对表 CSV / XLSX</b><br>
+              <span class="muted" id="dwCmpName">未载入</span>
+              <div class="row" style="justify-content:center;margin-top:8px">
+                <button class="sm" type="button" id="dwCmpPick">选择比对表…</button>
+              </div>
+            </div>
+            <input type="file" id="dwCmpFile" accept=".csv,.tsv,.txt,.xlsx" style="display:none">
+            <div class="row mb" style="margin-top:10px">
+              <label class="inline">主键列（主表）
+                <select id="dwCmpKeyMain"></select>
+              </label>
+              <label class="inline">比对后
+                <select id="dwCmpMode">
+                  <option value="count">只统计</option>
+                  <option value="showA">主表中显示「仅主表有」</option>
+                  <option value="showDiff">主表中显示「字段不一致」</option>
+                </select>
+              </label>
+              <button class="pri" id="dwCmpRun">开始比对</button>
+            </div>
+            <div class="out" id="dwCmpResult" style="font-family:inherit;white-space:normal">先载入主表与比对表，选择主键后比对</div>
+            <div class="row" style="margin-top:10px">
+              <button class="sm" id="dwCmpExpOnlyA">导出仅主表有</button>
+              <button class="sm" id="dwCmpExpOnlyB">导出仅比对表有</button>
+              <button class="sm" id="dwCmpExpDiff">导出字段不一致</button>
+            </div>
+          </div>
+        </div>
       </section>
 
       <!-- ========== 1. 批量下载 ========== -->
@@ -1580,7 +1687,9 @@
 
 <script src="js/vendor/pdf-lib.min.js"></script>
 <script src="js/vendor/markdown-it.min.js"></script>
+<script src="js/vendor/xlsx.full.min.js"></script>
 <script src="js/core.js"></script>
+<script src="js/datawork.js"></script>
 <script src="js/outdir.js"></script>
 <script src="js/download.js"></script>
 <script src="js/hash.js"></script>
