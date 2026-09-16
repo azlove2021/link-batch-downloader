@@ -79,7 +79,7 @@ function renderHead(){
   h += '<div class="dw-hrow dw-frow">';
   h += '<div class="dw-cell dw-idx">筛</div>';
   DS.headers.forEach(function(_, ci){
-    h += '<div class="dw-cell"><input type="text" data-f="' + ci + '" value="' + esc(DS.filters[ci] || '') + '" placeholder="包含…"></div>';
+    h += '<div class="dw-cell"><input type="text" data-f="' + ci + '" value="' + esc(DS.filters[ci] || '') + '" placeholder="包含…（!排除）"></div>';
   });
   h += '</div>';
   headEl.innerHTML = h;
@@ -144,9 +144,15 @@ function rebuildView(keepScroll){
     if (fkeys.length){
       for (var fi = 0; fi < fkeys.length; fi++){
         var ci = +fkeys[fi];
-        var needle = DS.filters[fkeys[fi]].toLowerCase();
+        var rawN = DS.filters[fkeys[fi]];
+        var needle = (rawN || '').trim();
+        var neg = false;
+        if (needle.charAt(0) === '!'){ neg = true; needle = needle.slice(1).trim(); }
+        if (!needle) continue;
+        needle = needle.toLowerCase();
         var cell = r[ci] == null ? '' : String(r[ci]);
-        if (cell.toLowerCase().indexOf(needle) < 0){ ok = false; break; }
+        var hit = cell.toLowerCase().indexOf(needle) >= 0;
+        if (neg ? hit : !hit){ ok = false; break; }
       }
     }
     if (ok && search){
@@ -229,9 +235,13 @@ function setDataset(name, headers, rows){
   rebuildView(false);
   renderHead();
   renderVisible();
-  notice('ok' === 'ok' ? 'info' : 'info', '已载入 ' + rows.length.toLocaleString('zh-CN') + ' 行');
+  notice('info', '已载入 ' + rows.length.toLocaleString('zh-CN') + ' 行');
   refreshColSelects();
   $('dwCleanCol').disabled = false;
+  $('dwPvGroup').disabled = false;
+  $('dwPvGroup2').disabled = false;
+  $('dwPvVal').disabled = false;
+  $('dwCmpKey').disabled = false;
 }
 
 $('dwPick').onclick = function(){ $('dwFile').click(); };
@@ -287,7 +297,10 @@ function refreshColSelects(){
   var sel = $('dwCleanCol');
   var cmp = $('dwCmpKey');
   var cmp2 = $('dwCmpKey2');
-  [sel, cmp, cmp2].forEach(function(el){
+  var pv = $('dwPvGroup');
+  var pv2 = $('dwPvGroup2');
+  var pvv = $('dwPvVal');
+  [sel, cmp, cmp2, pv, pvv].forEach(function(el){
     if (!el) return;
     var cur = el.value;
     el.innerHTML = DS.headers.map(function(h, i){
@@ -295,7 +308,122 @@ function refreshColSelects(){
     }).join('');
     if (cur !== '' && +cur < DS.headers.length) el.value = cur;
   });
+  if (pv2){
+    var cur2 = pv2.value;
+    pv2.innerHTML = '<option value="">（无）</option>' + DS.headers.map(function(h, i){
+      return '<option value="' + i + '">' + esc(h) + '</option>';
+    }).join('');
+    if (cur2 !== '' && cur2 !== undefined) pv2.value = cur2;
+  }
+  // 默认数值列：找含金额/数量/额/数 的列，否则最后一列
+  if (pvv && DS.headers.length){
+    var guess = DS.headers.findIndex(function(h){
+      return /金额|销售额|数量|合计|额|数|sum|amount|qty|count/i.test(h);
+    });
+    if (guess < 0) guess = DS.headers.length - 1;
+    if (!pvv.value) pvv.value = String(guess);
+  }
+  // 载入数据后启用透视/清洗控件
+  ['dwCleanCol','dwPvGroup','dwPvGroup2','dwPvVal','dwCmpKey'].forEach(function(id){
+    var el = $(id);
+    if (el && DS.headers.length) el.disabled = false;
+  });
 }
+
+/* ---------- 透视汇总 ---------- */
+var pvRows = [];
+$('dwPvRun').onclick = function(){
+  if (!DS.rows.length){ notice('warn', '请先载入数据'); return; }
+  var g1 = +$('dwPvGroup').value || 0;
+  var g2 = $('dwPvGroup2').value;
+  var g2i = g2 === '' || g2 == null ? -1 : +g2;
+  var vi = +$('dwPvVal').value || 0;
+  var op = $('dwPvOp').value;
+  var t0 = Date.now();
+  var acc = Object.create(null);
+
+  var src = DS.view.length && DS.view.length < DS.rows.length ? DS.view : null;
+  var iter = function(ri){
+    var r = DS.rows[ri];
+    var k1 = String(r[g1] == null ? '' : r[g1]).trim() || '（空）';
+    var k2 = g2i >= 0 ? String(r[g2i] == null ? '' : r[g2i]).trim() || '（空）' : '';
+    var key = k2 ? (k1 + '\u0002' + k2) : k1;
+    var a = acc[key];
+    if (!a){
+      a = acc[key] = { k1: k1, k2: k2, n: 0, sum: 0, min: Infinity, max: -Infinity };
+    }
+    a.n++;
+    if (op !== 'count'){
+      var v = parseFloat(String(r[vi] == null ? '' : r[vi]).replace(/[¥￥,，\s元]/g, ''));
+      if (!isNaN(v)){
+        a.sum += v;
+        if (v < a.min) a.min = v;
+        if (v > a.max) a.max = v;
+      }
+    }
+  };
+  if (src){
+    for (var i = 0; i < src.length; i++) iter(src[i]);
+  } else {
+    for (var i = 0; i < DS.rows.length; i++) iter(i);
+  }
+
+  pvRows = [];
+  var headers = g2i >= 0 ? [DS.headers[g1], DS.headers[g2i]] : [DS.headers[g1]];
+  var opName = { sum: '求和', avg: '平均', count: '计数', min: '最小', max: '最大' }[op];
+  headers.push(DS.headers[vi] + '_' + opName);
+  headers.push('行数');
+
+  Object.keys(acc).forEach(function(key){
+    var a = acc[key];
+    var val;
+    if (op === 'count') val = a.n;
+    else if (op === 'avg') val = a.n ? (a.sum / a.n) : 0;
+    else if (op === 'min') val = a.min === Infinity ? 0 : a.min;
+    else if (op === 'max') val = a.max === -Infinity ? 0 : a.max;
+    else val = a.sum;
+    if (op !== 'count') val = Math.round(val * 10000) / 10000;
+    pvRows.push(g2i >= 0 ? [a.k1, a.k2, val, a.n] : [a.k1, val, a.n]);
+  });
+  pvRows.sort(function(x, y){
+    // 按汇总值降序
+    var a = typeof x[x.length-2] === 'number' ? x[x.length-2] : 0;
+    var b = typeof y[y.length-2] === 'number' ? y[y.length-2] : 0;
+    return b - a;
+  });
+
+  var maxShow = 200;
+  var show = pvRows.slice(0, maxShow);
+  var h = '<div class="rtable" style="max-height:360px"><table><thead><tr>';
+  headers.forEach(function(x){ h += '<th>' + esc(x) + '</th>'; });
+  h += '</tr></thead><tbody>';
+  show.forEach(function(r){
+    h += '<tr>';
+    r.forEach(function(c){ h += '<td class="mono">' + esc(c) + '</td>'; });
+    h += '</tr>';
+  });
+  h += '</tbody></table></div>';
+  if (pvRows.length > maxShow){
+    h += '<div class="muted" style="margin-top:6px">仅显示前 ' + maxShow + ' 组，导出含全部 ' + pvRows.length + ' 组</div>';
+  }
+  $('dwPvOut').innerHTML = h;
+  $('dwPvStat').textContent = '共 ' + pvRows.length + ' 组 · ' + opName + ' · 用时 ' + (Date.now()-t0) + 'ms' +
+    (src ? '（基于当前筛选结果）' : '');
+};
+
+$('dwPvExport').onclick = function(){
+  if (!pvRows.length){ notice('warn', '请先生成汇总'); return; }
+  var g2i = $('dwPvGroup2').value;
+  var g1 = +$('dwPvGroup').value || 0;
+  var vi = +$('dwPvVal').value || 0;
+  var op = $('dwPvOp').value;
+  var opName = { sum: '求和', avg: '平均', count: '计数', min: '最小', max: '最大' }[op];
+  var headers = g2i === '' ? [DS.headers[g1], DS.headers[vi]+'_'+opName, '行数']
+    : [DS.headers[g1], DS.headers[+g2i], DS.headers[vi]+'_'+opName, '行数'];
+  var csv = U.toCsv([headers].concat(pvRows), ',');
+  U.saveBlob(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }), '透视汇总.csv');
+  notice('info', '已导出 ' + pvRows.length + ' 组');
+};
 
 function applyClean(fn, label){
   if (!DS.rows.length){ notice('warn', '请先载入数据'); return; }

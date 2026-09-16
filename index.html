@@ -39,6 +39,7 @@
     <a class="nav" data-tool="encode"><span class="ic">🔐</span>编码转换</a>
     <a class="nav" data-tool="regex"><span class="ic">🔍</span>正则测试</a>
     <a class="nav" data-tool="diff"><span class="ic">±</span>文本对比</a>
+    <a class="nav" data-tool="folder"><span class="ic">🗂</span>文件夹归类</a>
 
     <div class="grp-t">格式转换</div>
     <a class="nav" data-tool="image"><span class="ic">🖼️</span>图片工具</a>
@@ -196,6 +197,80 @@
               <button class="sm" id="dwCmpExpOnlyB">导出仅比对表有</button>
               <button class="sm" id="dwCmpExpDiff">导出字段不一致</button>
             </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-h"><h3>透视汇总</h3><span class="tip">按分组列汇总，如「部门 × 月份 → 销售额合计」</span></div>
+          <div class="card-b">
+            <div class="row mb">
+              <label class="inline">分组列
+                <select id="dwPvGroup" disabled></select>
+              </label>
+              <label class="inline">第二分组（可选）
+                <select id="dwPvGroup2" disabled>
+                  <option value="">（无）</option>
+                </select>
+              </label>
+              <label class="inline">汇总列
+                <select id="dwPvVal" disabled></select>
+              </label>
+              <label class="inline">方式
+                <select id="dwPvOp">
+                  <option value="sum">求和</option>
+                  <option value="avg">平均</option>
+                  <option value="count">计数</option>
+                  <option value="min">最小</option>
+                  <option value="max">最大</option>
+                </select>
+              </label>
+              <button class="pri" id="dwPvRun">生成汇总</button>
+              <button class="sm" id="dwPvExport">导出汇总 CSV</button>
+            </div>
+            <div class="muted" id="dwPvStat">先载入数据，再选分组列与数值列</div>
+            <div id="dwPvOut" style="margin-top:10px"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========== 文件夹归类 ========== -->
+      <section id="tool-folder" class="tool">
+        <h2 class="th">文件夹归类</h2>
+        <p class="td">把一个文件夹里的文件按规则自动归进子文件夹，适合发票、下载、周报等资料整理。可先预览再执行。</p>
+        <div class="card">
+          <div class="card-h"><h3>目标文件夹</h3></div>
+          <div class="card-b">
+            <div class="pathbox">
+              <span class="lbl">源文件夹</span>
+              <input id="foPath" readonly placeholder="未选择（Chrome/Edge 可原地归类）">
+              <button id="foBrowse" class="pri">浏览…</button>
+              <button id="foClear" class="sm">清空</button>
+            </div>
+            <div class="row mb">
+              <label class="inline">归类规则
+                <select id="foMode">
+                  <option value="ext">按扩展名</option>
+                  <option value="yearmonth">按修改年月 YYYY-MM</option>
+                  <option value="year">按修改年份</option>
+                  <option value="keyword">按文件名关键字</option>
+                  <option value="prefix">按文件名前 2 位</option>
+                  <option value="size">按大小档</option>
+                </select>
+              </label>
+              <label class="inline" id="foKwRow" style="display:none">关键字（逗号分隔）
+                <input type="text" id="foKw" class="mono" placeholder="发票,合同,周报" style="width:180px">
+              </label>
+              <label class="ck"><input type="checkbox" id="foSkipTop" checked> 跳过已有子文件夹</label>
+            </div>
+            <div class="row">
+              <button id="foPreview" class="pri">预览归类</button>
+              <button id="foRun" class="ok" disabled>执行归类</button>
+              <span class="muted" id="foStat"></span>
+            </div>
+            <div class="muted" style="margin-top:8px">
+              归类仅把文件移入同级子文件夹；不删除、不改内容。请先预览确认。
+            </div>
+            <div id="foList" style="margin-top:10px"></div>
           </div>
         </div>
       </section>
@@ -1709,6 +1784,7 @@
 <script src="js/aescrypto.js"></script>
 <script src="js/rename.js"></script>
 <script src="js/extra-tools.js"></script>
+<script src="js/folderorg.js"></script>
 <script src="js/desktop.js"></script>
 <script src="js/app.js"></script>
 </body>
