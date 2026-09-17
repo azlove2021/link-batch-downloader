@@ -357,11 +357,31 @@ function loadVendor(name){
   return vendorLoading[name];
 }
 
+/* ---------- 处理报告：会话操作日志（改进建议 §3.6） ----------
+ * 每个批量操作（载入/清洗/合并/拆表/对账/归类）记一条「我改了什么」，
+ * 在数据工作台「导出处理报告」输出 CSV 留档。只存内存，关页面即清；
+ * 上限 500 条防长会话膨胀。 */
+var OPLOG = [];
+var oplog = {
+  add: function(type, detail, before, after){
+    OPLOG.push({ ts: Date.now(), type: type, detail: detail || '', before: before, after: after });
+    if (OPLOG.length > 500) OPLOG.shift();
+  },
+  rows: function(){
+    return OPLOG.map(function(o){
+      return [new Date(o.ts).toLocaleString('zh-CN'), o.type, o.detail,
+              o.before == null ? '' : o.before, o.after == null ? '' : o.after];
+    });
+  },
+  count: function(){ return OPLOG.length; },
+  clear: function(){ OPLOG.length = 0; }
+};
+
 TB.util = {
   $:$, esc:esc, fmtSize:fmtSize, fmtSpeed:fmtSpeed, fmtEta:fmtEta,
   safeName:safeName, notice:notice, saveBlob:saveBlob, copyText:copyText,
   sha256Of:sha256Of, md5OfFile:md5OfFile, MD5:MD5,
-  makeXlsx:makeXlsx, makeZip:makeZip, parseCsv:parseCsv, toCsv:toCsv,
+  makeXlsx:makeXlsx, makeZip:makeZip, parseCsv:parseCsv, toCsv:toCsv, oplog:oplog,
   FS_OK:FS_OK
 };
 TB.FS_OK = FS_OK;

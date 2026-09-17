@@ -228,6 +228,7 @@ async function loadTextFile(file){
   notice('info', '读取 ' + esc(file.name) + ' …');
   var t = await parseAnyFile(file);
   setDataset(t.name, t.headers, t.rows);   // setDataset 内部会重置清洗管线
+  U.oplog.add('载入数据', t.name + '（' + t.headers.length + ' 列）', null, t.rows.length);
 }
 
 
@@ -537,7 +538,12 @@ function applyPipe(){
   });
   if (PIPE.undo.length > 3) PIPE.undo.shift();   // 最多回退 3 次，避免吃内存
 
+  var beforeRows = DS.rows.length;
   var r = C0.applyPipeline(DS.headers, DS.rows, PIPE.steps);
+  U.oplog.add('清洗执行', PIPE.steps.length + ' 步：' +
+    (r.logs && r.logs.length ? r.logs.join('；')
+     : PIPE.steps.map(function(s){ return C0.describeStep(s, DS.headers); }).join('；')),
+    beforeRows, r.rows.length);
   DS.rows = r.rows;
   DS.headers = r.headers;
   DS.filters = {}; DS.search = ''; DS.sortCol = -1; DS.sortDir = 0;
@@ -561,6 +567,7 @@ function undoPipe(){
   $('dwSearch').value = '';
   rebuildView(false); renderHead(); renderVisible(); refreshColSelects();
   $('dwCleanOut').innerHTML = '<div style="color:#15803d"><b>✓ 已撤销</b>，数据回到执行前（还可撤销 ' + PIPE.undo.length + ' 次）</div>';
+  U.oplog.add('清洗撤销', '数据回到执行前', null, DS.rows.length);
   notice('info', '已撤销上一步清洗');
    syncCleanButtons();
 }
@@ -608,6 +615,13 @@ $('dwExportXlsx').onclick = async function(){
   }finally{
     btn.disabled = false; btn.textContent = '导出 XLSX';
   }
+};
+$('dwExpReport').onclick = function(){
+  var rows = U.oplog.rows();
+  if (!rows.length){ notice('info', '本次会话还没做过任何操作，没有报告可导。'); return; }
+  var csv = U.toCsv([['时间','操作','明细','行数(前)','行数(后)']].concat(rows));
+  U.saveBlob(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }), '处理报告.csv');
+  notice('info', '已导出 处理报告.csv（' + rows.length + ' 条操作记录）');
 };
 
 /* ---------- 双表比对（对账）：A 表＝工作台当前数据，B 表＝拖入的比对表 ---------- */
@@ -742,6 +756,8 @@ function runCompare(){
     $('dwCmpStat').innerHTML += '<div class="muted" style="margin-top:4px">如果两边名称只是写法不同（全角/括号/「有限公司」），勾选「模糊匹配」再比一次。</div>';
   }
 
+  U.oplog.add('双表对账', DS.name + ' ↔ ' + CMP.name + (opt.fuzzy ? '（模糊匹配）' : '') +
+    '：一致 ' + same + '、差异 ' + diff + '、主表独有 ' + only1 + '、比对表独有 ' + only2, null, null);
   renderCmpRows();
   $('dwCmpExport').disabled = false;
   $('dwCmpDiffOnly').disabled = (diff + only1 + only2) === 0;

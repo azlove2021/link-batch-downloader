@@ -107,6 +107,8 @@
       $('dwMgExport').disabled = false;
       $('dwMgXlsx').disabled = false;
       $('dwMgLoad').disabled = false;
+      U.oplog.add('多表合并', tables.length + ' 个文件 → ' + res.headers.length + ' 列' +
+        (failed.length ? '（另有 ' + failed.length + ' 个解析失败）' : ''), null, res.rows.length);
       notice('info', '合并完成：' + res.rows.length.toLocaleString('zh-CN') + ' 行');
     } catch (e) {
       notice('err', '合并失败：' + esc(e.message || e));
@@ -223,6 +225,8 @@
         return { name: splitPlan.names[i].name, data: csvBytes(splitPlan.headers, g.rows, withHeader) };
       });
       U.saveBlob(await U.makeZip(files), '拆分结果_' + files.length + '个文件.zip');
+      U.oplog.add('按列拆表导出', files.length + ' 个 CSV（ZIP）', null,
+        splitPlan.groups.reduce(function (s, g) { return s + g.count; }, 0));
       notice('info', '已导出 ' + files.length + ' 个 CSV（打包成 ZIP）');
     } catch (e) {
       notice('err', '导出失败：' + esc(e.message || e));

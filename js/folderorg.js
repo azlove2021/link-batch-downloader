@@ -122,6 +122,8 @@ $('foRun').onclick = async function(){
     });
     if (LOGS.length > 5) LOGS.shift();
     updateUndoBtns();
+    if (U.oplog) U.oplog.add('文件夹归类', (($('foMode').selectedOptions[0] || {}).textContent || '') +
+      '：' + dirHandle.name + '（成功 ' + ok + (fail ? '，失败 ' + fail : '') + '）', plan.length, ok);
     notice(fail ? 'warn' : 'info', '归类完成：成功 ' + ok + (fail ? '，失败 ' + fail : '') + '。可「撤销上次归类」还原。');
     $('foStat').textContent = '完成：成功 ' + ok + '，失败 ' + fail;
     plan = [];
@@ -166,6 +168,7 @@ $('foUndo').onclick = async function(){
     for (var d in emptied){ try{ await log.rootHandle.removeDirectory(d); }catch(e){ /* 非空/不存在 */ } }
     LOGS.pop();
     updateUndoBtns();
+    if (U.oplog) U.oplog.add('归类撤销', '移回 ' + back + ' 个文件到 ' + log.root, null, back);
     notice(miss ? 'warn' : 'info', '已撤销：移回 ' + back + ' 个文件' + (miss ? '，' + miss + ' 个未找到（可能已被再次移动或改名）' : '') + '。');
     $('foStat').textContent = '已撤销上次归类（移回 ' + back + ' 个）';
   }catch(e){
