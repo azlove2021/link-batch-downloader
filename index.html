@@ -982,7 +982,7 @@
       <!-- ========== 批量重命名 ========== -->
       <section id="tool-rename" class="tool">
         <h2 class="th">批量重命名</h2>
-        <p class="td">规则链预览后重命名。Chrome/Edge 可对文件夹内文件原地改名；拖入文件则打包 ZIP 导出。</p>
+        <p class="td">先预览再执行，永不盲改。Chrome/Edge 可对文件夹内文件原地改名；拖入文件则打包 ZIP 导出。<b>执行后可一键撤销</b>。</p>
         <div class="card">
           <div class="card-b">
             <div class="drop" id="rnDrop">
@@ -1002,6 +1002,7 @@
                   <option value="replace">查找替换</option>
                   <option value="prefix">加前缀</option>
                   <option value="suffix">加后缀</option>
+                  <option value="date">日期提取重排</option>
                   <option value="number">编号</option>
                   <option value="lower">转小写</option>
                   <option value="upper">转大写</option>
@@ -1026,9 +1027,30 @@
               <label class="inline">位数 <input type="number" id="rnNumPad" value="2" min="1" max="8" style="width:70px"></label>
               <label class="inline">模板 <input type="text" id="rnNumTpl" value="{n}_{name}" style="width:160px"></label>
             </div>
+            <div class="row mb" id="rnDateRow" style="display:none">
+              <label class="inline">日期格式
+                <select id="rnDateSep">
+                  <option value="-">2024-01-03</option>
+                  <option value="_">2024_01_03</option>
+                  <option value=".">2024.01.03</option>
+                  <option value="cn">2024年01月03日</option>
+                  <option value="compact">20240103</option>
+                </select>
+              </label>
+              <label class="inline">模板
+                <input type="text" id="rnDateTpl" value="{date}_{name}" style="width:170px"
+                       title="{date} = 识别出的日期，{name} = 去掉日期后的原名">
+              </label>
+            </div>
+            <div class="muted" id="rnDateTip" style="display:none;margin-bottom:6px">
+              支持 20240103 / 2024-01-03 / 2024_01_03 / 2024年1月3日 / 微信图片_20241231235959 等写法；
+              认不出日期的文件会标红并自动跳过。
+            </div>
             <div id="rnList" style="margin-top:8px"></div>
             <div class="row" style="margin-top:12px">
               <button class="pri" id="rnRun">执行重命名</button>
+              <button id="rnUndo" disabled>撤销上次</button>
+              <button class="sm" id="rnLog" disabled>导出改名记录</button>
             </div>
           </div>
         </div>
@@ -1266,6 +1288,7 @@
 <script src="js/invoice.js"></script>
 <script src="js/qrcode.js"></script>
 <script src="js/pdf.js"></script>
+<script src="js/rename-core.js"></script>
 <script src="js/rename.js"></script>
 <script src="js/folderorg.js"></script>
 <script src="js/desktop.js"></script>

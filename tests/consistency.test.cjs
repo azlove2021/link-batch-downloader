@@ -12,6 +12,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const vm = require('vm');
 
 const ROOT = path.resolve(__dirname, '..');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
@@ -173,6 +174,41 @@ for (const [title, parent] of MERGED) {
   const s = sectionsNow.find((x) => x.id === parent);
   check(!!s && idx > s.start && idx < s.end,
     `「${title}」没有落在 ${parent} 面板内部（合并位置不对）`);
+}
+
+/* ---------- 9. 脚本加载顺序 ----------
+ * 顺序错了不会报错，只会「功能静默失效」，比崩溃更难发现。
+ * 例：rename-core.js 若排在 rename.js 之后，日期重命名会拿到空的 RC，
+ *     界面照常显示、点了没反应。 */
+const ordered = scripts.map((s) => s.replace(/\\/g, '/'));
+const idxOf = (f) => ordered.indexOf(f);
+
+check(idxOf('js/core.js') >= 0, 'index.html 未引用 js/core.js');
+const coreIdx = idxOf('js/core.js');
+for (let i = 0; i < ordered.length; i++) {
+  const s = ordered[i];
+  if (s === 'js/core.js' || !s.startsWith('js/') || s.includes('vendor/')) continue;
+  check(i > coreIdx, `${s} 必须在 js/core.js 之后加载（TB 工具库在那里定义）`);
+}
+
+/* 明确的依赖关系 */
+const ORDER_PAIRS = [['js/rename-core.js', 'js/rename.js']];
+for (const [before, after] of ORDER_PAIRS) {
+  if (idxOf(before) < 0 || idxOf(after) < 0) continue;
+  check(idxOf(before) < idxOf(after),
+    `${before} 必须在 ${after} 之前加载（否则相关功能会静默失效）`);
+}
+
+/* ---------- 10. 业务脚本语法可解析 ----------
+ * 比等到浏览器里报错要早一步；改错括号、漏引号在这里就会拦住。 */
+for (const f of runtimeJs) {
+  checks++;
+  const src = read(path.join('js', f));
+  try {
+    new vm.Script(src, { filename: f });
+  } catch (e) {
+    failures.push(`js/${f} 语法错误：${e.message}`);
+  }
 }
 
 /* ---------- 输出 ---------- */
