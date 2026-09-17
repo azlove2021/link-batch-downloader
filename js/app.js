@@ -18,49 +18,34 @@ var $ = U.$, notice = U.notice;
 })();
 
 var TOOLS = [
-  { id:'home', name:'工具总览', desc:'全部工具入口', k:'home 首页 总览 工具' },
-  { id:'data', name:'数据工作台', desc:'10万行CSV筛选、清洗、透视、双表对账', k:'csv excel 数据 分析 清洗 对账 比对 表格 10万 透视 汇总' },
-  { id:'folder', name:'文件夹归类', desc:'按扩展名/日期/关键字自动归子文件夹', k:'文件夹 归类 整理 发票 周报 自动' },
-  { id:'dl', name:'批量下载', desc:'扫 txt 清单，分目录批量下载，断点续传', k:'download 下载 链接 批量 txt' },
-  { id:'hash', name:'哈希校验', desc:'文件/文件夹 SHA-256 / MD5', k:'hash sha md5 校验 摘要' },
-  { id:'hcmp', name:'哈希对比', desc:'两文件或两段哈希是否一致', k:'hash compare 对比 一致 sha256' },
-  { id:'rename', name:'批量重命名', desc:'规则预览、前缀编号、原地改名', k:'rename 重命名 批量 编号' },
-  { id:'text', name:'文本处理', desc:'多行转一行、去重、排序、提取号码链接', k:'text 文本 多行 逗号 去重 提取' },
-  { id:'json', name:'JSON 工具', desc:'格式化、压缩、JSON↔CSV', k:'json 格式化 压缩 csv' },
-  { id:'sql', name:'SQL 格式化', desc:'本地美化 SQL 语句', k:'sql 格式化 beautify 数据库' },
-  { id:'encode', name:'编码转换', desc:'Base64、URL、HTML、GBK/UTF-8', k:'base64 url html gbk utf8 编码' },
-  { id:'regex', name:'正则测试', desc:'实时匹配、常用模板', k:'regex 正则 表达式 匹配' },
-  { id:'diff', name:'文本对比', desc:'行级 Diff 高亮', k:'diff 对比 差异' },
-  { id:'convert', name:'表格互转', desc:'CSV/TSV/JSON/Markdown/Excel', k:'csv tsv 表格 excel markdown 互转' },
-  { id:'image', name:'图片工具', desc:'格式转换、压缩、缩放、水印', k:'image 图片 压缩 转换 水印 jpg png webp' },
-  { id:'crop', name:'图片裁剪', desc:'框选裁剪、比例锁、导出', k:'crop 裁剪 剪切 图片 比例' },
-  { id:'stitch', name:'长图拼接', desc:'多图拼横向/竖向长图', k:'stitch 拼接 长图 合并 图片' },
-  { id:'pdf', name:'PDF 工具', desc:'合并、拆分、旋转、页码、提取页', k:'pdf 合并 拆分 旋转 页码 文档' },
-  { id:'pdfcrypt', name:'PDF 加密', desc:'给 PDF 设置打开密码', k:'pdf encrypt 密码 加密 只读 保护' },
-  { id:'md', name:'Markdown 编辑器', desc:'分屏预览、草稿、导出 HTML', k:'markdown md 预览 编辑器 草稿' },
-  { id:'invoice', name:'发票提取', desc:'发票号码/金额/购销方，导出表格', k:'invoice 发票 报销 税号 金额' },
-  { id:'qr', name:'二维码生成', desc:'文本链接转二维码 PNG', k:'qr 二维码 条码' },
-  { id:'color', name:'颜色 / 色板', desc:'HEX/RGB/HSL 与图片取色', k:'color 颜色 色板 hex rgb hsl 取色' },
-  { id:'time', name:'时间戳', desc:'时间戳与日期互转', k:'timestamp 时间戳 日期 unix' },
-  { id:'rand', name:'密码 / UUID', desc:'强密码、UUID、验证码', k:'password uuid 密码 随机 验证码' },
-  { id:'calc', name:'房贷 / 利息', desc:'月供、单利复利估算', k:'房贷 月供 利息 复利 计算器 本金' },
-  { id:'tstat', name:'文本统计', desc:'字数、行数、阅读时间', k:'字数 统计 行数 阅读' },
-  { id:'jwt', name:'JWT 查看', desc:'Header / Payload 本地解析', k:'jwt token 登录 解析' },
-  { id:'crypto', name:'AES / HMAC', desc:'AES-GCM 加解密、HMAC 签名', k:'aes hmac 加密 解密 密码 签名 gcm' },
-  { id:'outdir', name:'统一输出目录', desc:'导出优先写入常用文件夹', k:'outdir 输出 目录 文件夹 导出' },
-  { id:'av', name:'音视频转码', desc:'本机 FFmpeg 转换（桌面版）', k:'ffmpeg 音视频 转码 mp4 mp3 gif 桌面' },
-  { id:'offconv', name:'Office→PDF', desc:'LibreOffice 转 PDF（桌面版）', k:'word excel ppt pdf libreoffice office 桌面' },
-  { id:'ocr', name:'图片 OCR', desc:'扫描件识别文字（桌面版）', k:'ocr 识别 扫描 发票 桌面' },
-  { id:'clean', name:'大文件清理', desc:'扫描大文件进回收站（桌面版）', k:'清理 大文件 c盘 回收站 桌面' },
-  { id:'desk', name:'桌面设置', desc:'托盘、右键菜单、依赖检测', k:'托盘 右键 设置 桌面 ffmpeg 检测' }
+  /* tier 1 = 日常常用（首页大卡） / 2 = 偶尔用 / 3 = 更多（默认折叠） */
+  { id:'home', name:'工具总览', desc:'全部工具入口', k:'home 首页 总览 工具', tier:0 },
+
+  { id:'data', name:'数据工作台', desc:'大表筛选、清洗、透视、双表对账', k:'csv excel 数据 分析 清洗 对账 比对 表格 透视 汇总 合并 拆分', tier:1 },
+  { id:'rename', name:'批量重命名', desc:'规则预览、前缀编号、原地改名', k:'rename 重命名 批量 编号 文件名 扫描件', tier:1 },
+  { id:'diff', name:'文本对比', desc:'行级 Diff 高亮，快速找差异', k:'diff 对比 差异 比较 两份 找出不同', tier:1 },
+  { id:'convert', name:'表格互转', desc:'CSV/TSV/JSON/Markdown/Excel', k:'csv tsv 表格 excel markdown json 互转 转换', tier:1 },
+
+  { id:'invoice', name:'发票提取', desc:'发票号码/金额/购销方，导出表格', k:'invoice 发票 报销 税号 金额 对账', tier:2 },
+  { id:'pdf', name:'PDF 工具', desc:'合并、拆分、旋转、页码、加密码', k:'pdf 合并 拆分 旋转 页码 文档 密码 加密', tier:2 },
+  { id:'text', name:'文本处理', desc:'去重、排序、多行转一行、提取号码链接', k:'text 文本 多行 逗号 去重 提取 清洗 换行', tier:2 },
+  { id:'image', name:'图片工具', desc:'压缩转换、裁剪、长图拼接', k:'image 图片 压缩 转换 水印 裁剪 拼接 长图', tier:2 },
+  { id:'folder', name:'文件夹归类', desc:'按扩展名/日期/关键字自动归子文件夹', k:'文件夹 归类 整理 发票 周报 自动', tier:2 },
+  { id:'dl', name:'批量下载', desc:'扫 txt 清单，分目录批量下载，断点续传', k:'download 下载 链接 批量 txt', tier:2 },
+  { id:'hash', name:'哈希校验', desc:'文件/文件夹 SHA-256 / MD5，可对比', k:'hash sha md5 校验 摘要 对比 一致', tier:2 },
+
+  { id:'qr', name:'二维码生成', desc:'文本链接转二维码 PNG', k:'qr 二维码 条码', tier:3 },
+  { id:'av', name:'音视频转码', desc:'本机 FFmpeg 转换（桌面版）', k:'ffmpeg 音视频 转码 mp4 mp3 gif 桌面', tier:3 },
+  { id:'offconv', name:'Office→PDF', desc:'LibreOffice 转 PDF（桌面版）', k:'word excel ppt pdf libreoffice office 桌面', tier:3 },
+  { id:'ocr', name:'图片 OCR', desc:'扫描件识别文字（桌面版）', k:'ocr 识别 扫描 发票 桌面', tier:3 },
+  { id:'clean', name:'大文件清理', desc:'扫描大文件进回收站（桌面版）', k:'清理 大文件 c盘 回收站 桌面', tier:3 },
+  { id:'desk', name:'桌面设置', desc:'托盘、右键菜单、依赖检测、输出目录', k:'托盘 右键 设置 桌面 ffmpeg 检测 输出目录', tier:3 }
 ];
 
 var ICONS = {
-  home:'🏠', data:'📊', folder:'🗂', dl:'📥', hash:'🔒', hcmp:'⚖️', rename:'✏️', text:'📝', json:'{}', sql:'SQL',
-  encode:'🔐', regex:'🔍', diff:'±', convert:'🔄', image:'🖼️', crop:'✂️', stitch:'🔗',
-  pdf:'📄', pdfcrypt:'🔏', md:'MD', invoice:'🧾', qr:'▣', color:'🎨', time:'⏱', rand:'🎲',
-  calc:'🧮', tstat:'📏', jwt:'🪪', crypto:'🗝', outdir:'📂',
-  av:'🎬', offconv:'📑', ocr:'👁', clean:'🧹', desk:'⚙️'
+  home:'🏠', data:'📊', rename:'✏️', diff:'±', convert:'🔄',
+  invoice:'🧾', pdf:'📄', text:'📝', image:'🖼️', folder:'🗂', dl:'📥', hash:'🔒',
+  qr:'▣', av:'🎬', offconv:'📑', ocr:'👁', clean:'🧹', desk:'⚙️'
 };
 
 function toolById(id){
@@ -68,32 +53,84 @@ function toolById(id){
   return null;
 }
 
+function toolCard(t, big){
+  var a = document.createElement('a');
+  a.className = 'tile' + (big ? ' big' : '');
+  a.href = 'javascript:void(0)';
+  a.innerHTML =
+    '<div class="ic">'+(ICONS[t.id] || '·')+'</div>' +
+    '<div class="nm">'+t.name+'</div>' +
+    '<div class="ds">'+t.desc+'</div>';
+  a.onclick = function(){ go(t.id); };
+  return a;
+}
+
+function groupTitle(text){
+  var h = document.createElement('div');
+  h.className = 'dash-grp';
+  h.textContent = text;
+  return h;
+}
+
+/* 首页按使用频率分层：日常常用（大卡）→ 偶尔用 → 更多（默认折叠） */
 function buildDash(filter){
   var grid = $('dashGrid');
   grid.innerHTML = '';
   var q = (filter || '').trim().toLowerCase();
   var list = TOOLS.filter(function(t){
-    if (t.id === 'home') return !q;
+    if (t.id === 'home') return false;
     if (!q) return true;
     var hay = (t.name + ' ' + t.desc + ' ' + t.k).toLowerCase();
     return hay.indexOf(q) >= 0;
   });
-  list.forEach(function(t){
-    var a = document.createElement('a');
-    a.className = 'tile';
-    a.href = 'javascript:void(0)';
-    a.innerHTML =
-      '<div class="ic">'+ICONS[t.id]+'</div>' +
-      '<div class="nm">'+t.name+'</div>' +
-      '<div class="ds">'+t.desc+'</div>';
-    a.onclick = function(){ go(t.id); };
-    grid.appendChild(a);
-  });
+
+  if (q){
+    /* 搜索：不分层，直接平铺结果 */
+    list.forEach(function(t){ grid.appendChild(toolCard(t, false)); });
+  } else {
+    var groups = [
+      { title:'日常常用', tier:1, big:true },
+      { title:'偶尔用', tier:2, big:false },
+      { title:'更多工具（桌面增强 / 低频）', tier:3, big:false, collapsed:true }
+    ];
+    groups.forEach(function(g){
+      var items = list.filter(function(t){ return t.tier === g.tier; });
+      if (!items.length) return;
+      grid.appendChild(groupTitle(g.title));
+      items.forEach(function(t){
+        var card = toolCard(t, g.big);
+        if (g.collapsed) card.classList.add('more-tile');
+        card.style.display = g.collapsed ? 'none' : '';
+        grid.appendChild(card);
+      });
+    });
+    /* 「展开更多」按钮：只在有折叠项且非搜索状态时出现 */
+    var hasMore = list.some(function(t){ return t.tier === 3; });
+    if (hasMore){
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.id = 'dashMoreBtn';
+      btn.className = 'sm more-btn';
+      btn.textContent = '展开更多工具 ▾';
+      btn.onclick = function(){
+        var tiles = grid.querySelectorAll('.more-tile');
+        var open = tiles.length && tiles[0].style.display === 'none';
+        for (var i = 0; i < tiles.length; i++){
+          tiles[i].style.display = open ? '' : 'none';
+        }
+        btn.textContent = open ? '收起 ▴' : '展开更多工具 ▾';
+      };
+      grid.appendChild(btn);
+    }
+  }
+
   var hint = $('searchHint');
   if (hint){
     if (q){
       hint.style.display = '';
-      hint.textContent = list.length ? ('匹配 ' + list.length + ' 个工具，点击卡片进入') : '没有匹配的工具，试试：pdf / 发票 / base64 / 房贷';
+      hint.textContent = list.length
+        ? ('匹配 ' + list.length + ' 个工具，点击卡片进入')
+        : '没有匹配的工具，试试：表格 / 发票 / pdf / 改名 / 对比';
     } else {
       hint.style.display = 'none';
     }

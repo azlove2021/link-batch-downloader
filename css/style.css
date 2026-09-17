@@ -372,3 +372,15 @@ details.help div{margin-top:8px;padding:11px 14px;background:#f8fafc;border-radi
 .dw-row:hover{background:#f8fafc}
 .dw-row .dw-cell{flex:0 0 140px;min-width:140px;padding:5px 10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;border-right:1px solid #f8fafc;font-family:ui-monospace,Consolas,monospace}
 .dw-row .dw-idx{flex:0 0 56px;min-width:56px;color:var(--tx3);text-align:right}
+
+/* ============ 首页分层（工具瘦身后） ============ */
+.dash-grp{grid-column:1 / -1;margin:20px 0 4px;font-size:13px;font-weight:600;
+  color:var(--tx2);letter-spacing:.5px;border-bottom:1px solid var(--line2);padding-bottom:6px}
+.dash-grp:first-child{margin-top:4px}
+.tile.big{padding:18px 16px}
+.tile.big .ic{font-size:30px;line-height:1.2}
+.tile.big .nm{font-size:15px;margin-top:6px}
+.more-btn{grid-column:1 / -1;justify-self:start;margin:14px 0 4px}
+
+/* ============ 合并进同一工具的旧面板 ============ */
+.merged{margin-top:26px;padding-top:18px;border-top:2px dashed var(--line)}

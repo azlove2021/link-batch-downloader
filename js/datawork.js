@@ -296,11 +296,10 @@ $('dwDemo').onclick = function(){
 function refreshColSelects(){
   var sel = $('dwCleanCol');
   var cmp = $('dwCmpKey');
-  var cmp2 = $('dwCmpKey2');
   var pv = $('dwPvGroup');
   var pv2 = $('dwPvGroup2');
   var pvv = $('dwPvVal');
-  [sel, cmp, cmp2, pv, pvv].forEach(function(el){
+  [sel, cmp, pv, pvv].forEach(function(el){
     if (!el) return;
     var cur = el.value;
     el.innerHTML = DS.headers.map(function(h, i){

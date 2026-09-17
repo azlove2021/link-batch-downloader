@@ -319,3 +319,58 @@ $('pdfSplitStyle').onchange = function(){
 
 setMode('merge');
 })();
+
+/* ======== 由 extra-tools.js 合并：PDF 加密 ======== */
+/* ---------- PDF 加密 ---------- */
+(function(){
+var U = TB.util;
+var $ = U.$, notice = U.notice, esc = U.esc;
+if (typeof window.PDFLib === 'undefined') return;
+var PDFLib = window.PDFLib;
+var buf = null, fname = '';
+
+$('pdfCryptPick').onclick = function(){ $('pdfCryptFiles').click(); };
+$('pdfCryptFiles').onchange = async function(){
+  var f = this.files && this.files[0];
+  if (!f) return;
+  fname = f.name;
+  buf = new Uint8Array(await f.arrayBuffer());
+  $('pdfCryptInfo').textContent = f.name + ' · ' + U.fmtSize(buf.length);
+  this.value = '';
+};
+
+$('pdfCryptRun').onclick = async function(){
+  if (!buf){ notice('warn','请先选择 PDF'); return; }
+  var pass = $('pdfCryptPass').value;
+  if (!pass){ notice('warn','请输入密码'); return; }
+  var btn = this; btn.disabled = true; btn.textContent = '处理中…';
+  try{
+    // 只支持「给未加密 PDF 添加打开密码」。
+    // 原「解密」分支已移除：pdf-lib 不支持按密码解密（userPassword 选项被静默忽略），
+    // 那条分支只会产出损坏文件，属于误导性功能。
+    // 另注：这里用的是 PDF 标准加密（RC4），不是 AES-256。
+    var doc = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+    var out = await doc.save({
+      userPassword: pass,
+      ownerPassword: pass + '_owner',
+      permissions: {
+        printing: 'highResPrint',
+        modifying: false,
+        copying: false,
+        annotating: true,
+        fillingForms: true,
+        contentAccessibility: true,
+        documentAssembly: true
+      }
+    });
+    U.saveBlob(new Blob([out], {type:'application/pdf'}), fname.replace(/\.pdf$/i,'') + '_已加密.pdf');
+    notice('info','已加密并下载');
+    $('pdfCryptMsg').textContent = '输出 ' + U.fmtSize(out.length) + ' · 打开文件需要输入密码';
+  }catch(e){
+    notice('err','加密失败：' + esc(e.message));
+    $('pdfCryptMsg').textContent = e.message || '';
+  }finally{
+    btn.disabled = false; btn.textContent = '处理 PDF';
+  }
+};
+})();

@@ -224,3 +224,63 @@ function updateHashRow(i, row){
   }
 }
 })();
+
+/* ======== 由 extra-tools.js 合并：哈希对比 ======== */
+/* ---------- 哈希对比 ---------- */
+(function(){
+var U = TB.util;
+var $ = U.$, notice = U.notice;
+
+var fileA = null, fileB = null;
+async function setFile(which, file){
+  if (which === 'A'){ fileA = file; $('hcA').textContent = file ? (file.name + ' · ' + U.fmtSize(file.size)) : '未选择'; }
+  else { fileB = file; $('hcB').textContent = file ? (file.name + ' · ' + U.fmtSize(file.size)) : '未选择'; }
+}
+$('hcPickA').onclick = function(){ $('hcFileA').click(); };
+$('hcPickB').onclick = function(){ $('hcFileB').click(); };
+$('hcFileA').onchange = function(){ setFile('A', this.files[0]); this.value=''; };
+$('hcFileB').onchange = function(){ setFile('B', this.files[0]); this.value=''; };
+$('hcMode').onchange = function(){
+  var textMode = this.value === 'text';
+  $('hcTextMode').style.display = textMode ? '' : 'none';
+  $('hcFileMode').style.display = textMode ? 'none' : '';
+};
+$('hcMode').dispatchEvent(new Event('change'));
+
+$('hcRun').onclick = async function(){
+  try{
+    var mode = $('hcMode').value;
+    if (mode === 'text'){
+      var a = $('hcTextA').value.trim().toLowerCase();
+      var b = $('hcTextB').value.trim().toLowerCase();
+      if (!a || !b){ notice('warn','请填写两段哈希'); return; }
+      var same = a === b;
+      $('hcOut').innerHTML =
+        '<div style="font-size:16px;font-weight:650;color:' + (same?'var(--ok)':'var(--err)') + '">' +
+        (same ? '✓ 完全一致' : '✗ 不一致') + '</div>' +
+        '<div class="muted" style="margin-top:8px">A: ' + esc(a.slice(0,64)) + (a.length>64?'…':'') + '</div>' +
+        '<div class="muted">B: ' + esc(b.slice(0,64)) + (b.length>64?'…':'') + '</div>' +
+        (same ? '' : '<div class="muted" style="margin-top:8px">长度 ' + a.length + ' vs ' + b.length + '</div>');
+      return;
+    }
+    if (!fileA || !fileB){ notice('warn','请选择两个文件'); return; }
+    $('hcOut').textContent = '计算中…';
+    var ha = await U.sha256Of(fileA);
+    var hb = await U.sha256Of(fileB);
+    var same = ha === hb;
+    $('hcOut').innerHTML =
+      '<div style="font-size:16px;font-weight:650;color:' + (same?'var(--ok)':'var(--err)') + '">' +
+      (same ? '✓ 文件内容一致（SHA-256 相同）' : '✗ 文件内容不同') + '</div>' +
+      '<div class="mono" style="margin-top:10px;word-break:break-all">A: ' + esc(ha) + '</div>' +
+      '<div class="mono" style="word-break:break-all">B: ' + esc(hb) + '</div>';
+  }catch(e){
+    notice('err','对比失败：' + (e.message||e));
+  }
+};
+$('hcClear').onclick = function(){
+  fileA = fileB = null;
+  $('hcA').textContent = '未选择'; $('hcB').textContent = '未选择';
+  $('hcTextA').value = ''; $('hcTextB').value = '';
+  $('hcOut').textContent = '结果';
+};
+})();

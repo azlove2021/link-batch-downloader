@@ -411,7 +411,50 @@
             <div id="hashResult" class="hash-result"></div>
           </div>
         </div>
-      </section>
+      
+
+        <!-- ↓ 由独立工具合并而来：哈希对比 -->
+        <div class="merged"><h2 class="th">哈希对比</h2>
+        <p class="td">比较两段 SHA-256 是否一致，或计算并对比两个文件的 SHA-256。</p>
+        <div class="card">
+          <div class="card-b">
+            <div class="row mb">
+              <label class="inline">模式
+                <select id="hcMode">
+                  <option value="text">粘贴哈希文本</option>
+                  <option value="file">两个文件</option>
+                </select>
+              </label>
+              <button class="sm" id="hcClear">清空</button>
+            </div>
+            <div id="hcTextMode">
+              <div class="split">
+                <textarea id="hcTextA" class="sm" placeholder="哈希 A"></textarea>
+                <textarea id="hcTextB" class="sm" placeholder="哈希 B"></textarea>
+              </div>
+            </div>
+            <div id="hcFileMode" style="display:none">
+              <div class="pathbox">
+                <span class="lbl">文件 A</span>
+                <input id="hcA" readonly placeholder="未选择">
+                <button id="hcPickA">选择…</button>
+              </div>
+              <div class="pathbox">
+                <span class="lbl">文件 B</span>
+                <input id="hcB" readonly placeholder="未选择">
+                <button id="hcPickB">选择…</button>
+              </div>
+              <input type="file" id="hcFileA" style="display:none">
+              <input type="file" id="hcFileB" style="display:none">
+            </div>
+            <div class="row" style="margin-top:12px">
+              <button class="pri" id="hcRun">开始对比</button>
+            </div>
+            <div class="out empty" id="hcOut" style="margin-top:12px;white-space:pre-wrap;font-family:inherit">结果</div>
+          </div>
+        </div>
+        </div>
+</section>
 
       <!-- ========== 3. 文本处理 ========== -->
       <section id="tool-text" class="tool">
@@ -483,158 +526,8 @@
         </div>
       </section>
 
-      <!-- ========== 4. JSON ========== -->
-      <section id="tool-json" class="tool">
-        <h2 class="th">JSON 工具</h2>
-        <p class="td">格式化、压缩、校验、排序键，以及 JSON ↔ CSV 互转。</p>
-        <div class="card">
-          <div class="card-h">
-            <h3>输入</h3>
-            <div class="right">
-              <button class="sm pri" id="jsonFormat">格式化</button>
-              <button class="sm" id="jsonMinify">压缩</button>
-              <button class="sm" id="jsonSort">键排序</button>
-              <button class="sm" id="jsonEscape">转义字符串</button>
-              <button class="sm" id="jsonUnescape">反转义</button>
-            </div>
-          </div>
-          <div class="card-b">
-            <div class="split">
-              <textarea id="jsonIn" placeholder='粘贴 JSON，例如 {"name":"张三","tags":["a","b"]}'></textarea>
-              <textarea id="jsonOut" placeholder="结果" readonly></textarea>
-            </div>
-            <div class="row" style="margin-top:12px">
-              <button class="sm" id="jsonCopyOut">复制结果</button>
-              <button class="sm" id="jsonSwap">⇄ 交换</button>
-              <span class="sep"></span>
-              <button class="sm" id="json2csv">JSON → CSV</button>
-              <button class="sm" id="csv2json">CSV → JSON</button>
-              <label class="inline">CSV 分隔符
-                <select id="jsonCsvSep">
-                  <option value=",">,</option>
-                  <option value=";">;</option>
-                  <option value="\t">Tab</option>
-                  <option value="|">|</option>
-                </select>
-              </label>
-              <span class="muted" id="jsonMsg"></span>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <!-- ========== 5. 编码转换 ========== -->
-      <section id="tool-encode" class="tool">
-        <h2 class="th">编码转换</h2>
-        <p class="td">Base64、URL 编解码、HTML 实体、UTF-8 / GBK 文本编码互转。</p>
-        <div class="card">
-          <div class="card-h">
-            <h3>Base64</h3>
-            <div class="right">
-              <button class="sm pri" id="b64Enc">编码 →</button>
-              <button class="sm" id="b64Dec">← 解码</button>
-              <label class="ck"><input type="checkbox" id="b64Url"> URL-safe</label>
-            </div>
-          </div>
-          <div class="card-b">
-            <div class="split">
-              <textarea id="b64In" placeholder="原文或 Base64"></textarea>
-              <textarea id="b64Out" placeholder="结果" readonly></textarea>
-            </div>
-            <div class="row" style="margin-top:10px">
-              <button class="sm" id="b64Copy">复制结果</button>
-              <button class="sm" id="b64Clear">清空</button>
-              <label class="ck"><input type="checkbox" id="b64Utf8" checked> 中文按 UTF-8（推荐勾选）</label>
-            </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-h">
-            <h3>URL / HTML 实体</h3>
-            <div class="right">
-              <button class="sm" id="urlEnc">URL 编码 →</button>
-              <button class="sm" id="urlDec">← URL 解码</button>
-              <span class="sep"></span>
-              <button class="sm" id="htmlEnc">HTML 转义 →</button>
-              <button class="sm" id="htmlDec">← HTML 反转义</button>
-            </div>
-          </div>
-          <div class="card-b">
-            <div class="split">
-              <textarea id="urlIn" class="sm" placeholder="文本或 URL / HTML"></textarea>
-              <textarea id="urlOut" class="sm" placeholder="结果" readonly></textarea>
-            </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-h">
-            <h3>文本编码（UTF-8 / GBK / UTF-16）</h3>
-            <div class="right">
-              <label class="inline">源编码
-                <select id="encFrom">
-                  <option value="utf-8">UTF-8</option>
-                  <option value="gbk">GBK</option>
-                  <option value="utf-16le">UTF-16 LE</option>
-                  <option value="utf-16be">UTF-16 BE</option>
-                </select>
-              </label>
-              <label class="inline">目标编码
-                <select id="encTo">
-                  <option value="utf-8">UTF-8</option>
-                  <option value="gbk">GBK</option>
-                  <option value="utf-16le">UTF-16 LE</option>
-                </select>
-              </label>
-              <button class="sm pri" id="encRun">转换</button>
-            </div>
-          </div>
-          <div class="card-b">
-            <div class="split">
-              <textarea id="encIn" class="sm" placeholder="粘贴文本，或点下方上传文件字节"></textarea>
-              <textarea id="encOut" class="sm" placeholder="结果" readonly></textarea>
-            </div>
-            <div class="row" style="margin-top:10px">
-              <button class="sm" id="encFileBtn">从文件读取…</button>
-              <input type="file" id="encFile" style="display:none" accept=".txt,.csv,.json,.xml,.htm,.html,.log,.md">
-              <button class="sm" id="encSaveBtn">结果存为文件…</button>
-              <span class="muted" id="encMsg"></span>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <!-- ========== 6. 正则 ========== -->
-      <section id="tool-regex" class="tool">
-        <h2 class="th">正则测试</h2>
-        <p class="td">在文本上试正则，实时看匹配结果与分组。</p>
-        <div class="card">
-          <div class="card-b">
-            <div class="row mb">
-              <span class="mono" style="color:var(--tx2)">/</span>
-              <input type="text" id="rePat" class="grow mono" placeholder="例如 \d{11}" style="min-width:200px">
-              <span class="mono" style="color:var(--tx2)">/</span>
-              <input type="text" id="reFlags" class="mono" value="g" style="width:70px" placeholder="flags">
-              <button class="sm" id="reTest">测试</button>
-            </div>
-            <div class="row mb">
-              <span class="muted">常用：</span>
-              <button class="sm" data-re="\d{11}">手机号</button>
-              <button class="sm" data-re="[\w.+-]+@[\w-]+\.[\w.]+">邮箱</button>
-              <button class="sm" data-re="https?://[^\s]+">链接</button>
-              <button class="sm" data-re="\d{17}[\dXx]">身份证</button>
-              <button class="sm" data-re="[1-9]\d{0,2}(?:\.\d+)?">金额</button>
-              <button class="sm" data-re="1[3-9]\d{9}">手机</button>
-            </div>
-            <textarea id="reText" placeholder="待测文本"></textarea>
-            <div class="row" style="margin-top:10px">
-              <span class="muted" id="reStat"></span>
-              <span class="grow"></span>
-              <button class="sm" id="reToText">匹配结果送文本处理</button>
-            </div>
-            <div class="out empty" id="reOut" style="margin-top:12px">匹配结果会高亮显示在这里</div>
-          </div>
-        </div>
-      </section>
 
       <!-- ========== 7. Diff ========== -->
       <section id="tool-diff" class="tool">
@@ -757,7 +650,120 @@
             <input type="file" id="imgZipOut" style="display:none">
           </div>
         </div>
-      </section>
+      
+
+        <!-- ↓ 由独立工具合并而来：图片裁剪 -->
+        <div class="merged"><h2 class="th">图片裁剪</h2>
+        <p class="td">拖拽框选裁剪区域，支持常用比例锁、导出 PNG/JPG/WebP。图片不上传。</p>
+        <div class="card">
+          <div class="card-b">
+            <div class="drop" id="cropDrop" style="margin-bottom:12px">
+              <b>点击或拖入图片</b><br>
+              <span class="muted" id="cropInfo">尚未选择图片</span>
+              <div class="row" style="justify-content:center;margin-top:10px">
+                <button class="sm" type="button" id="cropPick">选择图片…</button>
+                <button class="sm" type="button" id="cropClear">清空</button>
+              </div>
+            </div>
+            <input type="file" id="cropFiles" accept="image/*" style="display:none">
+            <div class="row mb">
+              <label class="inline">比例
+                <select id="cropRatio">
+                  <option value="free">自由</option>
+                  <option value="1:1">1:1</option>
+                  <option value="4:3">4:3</option>
+                  <option value="3:4">3:4</option>
+                  <option value="16:9">16:9</option>
+                  <option value="9:16">9:16</option>
+                </select>
+              </label>
+              <button class="sm" id="cropFull">全图</button>
+              <label class="inline">格式
+                <select id="cropFmt">
+                  <option value="image/png">PNG</option>
+                  <option value="image/jpeg" selected>JPG</option>
+                  <option value="image/webp">WebP</option>
+                </select>
+              </label>
+              <label class="inline">质量
+                <input type="range" id="cropQuality" min="10" max="100" value="92" style="width:90px">
+                <span id="cropQVal" class="mono">92</span>
+              </label>
+              <label class="inline">背景
+                <select id="cropBg">
+                  <option value="transparent">透明</option>
+                  <option value="#ffffff" selected>白</option>
+                  <option value="#000000">黑</option>
+                </select>
+              </label>
+            </div>
+            <div id="cropStage" style="text-align:center;background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:12px;min-height:120px">
+              <canvas id="cropCanvas" style="max-width:100%;cursor:crosshair;display:none"></canvas>
+            </div>
+            <div class="row" style="margin-top:12px">
+              <button class="pri" id="cropRun">导出裁剪结果</button>
+              <span class="muted" id="cropOutMsg"></span>
+            </div>
+          </div>
+        </div>
+        </div>
+
+
+        <!-- ↓ 由独立工具合并而来：长图拼接 -->
+        <div class="merged"><h2 class="th">长图拼接</h2>
+        <p class="td">多张图片拼成横向或竖向长图，可设间距、背景与宽度上限。</p>
+        <div class="card">
+          <div class="card-b">
+            <div class="drop" id="stitchDrop" style="margin-bottom:12px">
+              <b>点击或拖入多张图片</b><br>
+              <span class="muted">按列表顺序拼接，可上下调整</span>
+              <div class="row" style="justify-content:center;margin-top:10px">
+                <button class="sm" type="button" id="stitchPick">选择图片…</button>
+                <button class="sm" type="button" id="stitchClear">清空</button>
+              </div>
+            </div>
+            <input type="file" id="stitchFiles" accept="image/*" multiple style="display:none">
+            <div class="row mb">
+              <label class="inline">方向
+                <select id="stitchDir">
+                  <option value="v">竖向（上下）</option>
+                  <option value="h">横向（左右）</option>
+                </select>
+              </label>
+              <label class="inline">间距(px)
+                <input type="number" id="stitchGap" value="0" min="0" max="80" style="width:70px">
+              </label>
+              <label class="inline">最大边(px)
+                <input type="number" id="stitchMax" value="0" min="0" step="100" style="width:90px" placeholder="0=不缩">
+              </label>
+              <label class="inline">背景
+                <select id="stitchBg">
+                  <option value="#ffffff" selected>白</option>
+                  <option value="transparent">透明</option>
+                  <option value="#000000">黑</option>
+                </select>
+              </label>
+              <label class="inline">格式
+                <select id="stitchFmt">
+                  <option value="image/png" selected>PNG</option>
+                  <option value="image/jpeg">JPG</option>
+                  <option value="image/webp">WebP</option>
+                </select>
+              </label>
+              <label class="inline">质量
+                <input type="range" id="stitchQuality" min="10" max="100" value="92" style="width:90px">
+                <span id="stitchQVal" class="mono">92</span>
+              </label>
+            </div>
+            <div id="stitchList"></div>
+            <div class="row" style="margin-top:12px">
+              <button class="pri" id="stitchRun">生成长图</button>
+              <span class="muted" id="stitchOutMsg"></span>
+            </div>
+          </div>
+        </div>
+        </div>
+</section>
 
       <!-- ========== 10. 发票提取 ========== -->
       <section id="tool-invoice" class="tool">
@@ -848,77 +854,7 @@
         </div>
       </section>
 
-      <!-- ========== 12. 时间戳 ========== -->
-      <section id="tool-time" class="tool">
-        <h2 class="th">时间戳转换</h2>
-        <p class="td">秒 / 毫秒时间戳 ↔ 本地时间、UTC，互转与当前时间。</p>
-        <div class="card">
-          <div class="card-b">
-            <div class="row mb">
-              <button class="pri" id="tsNow">获取当前时间</button>
-              <span class="mono" id="tsNowShow" style="font-size:15px;font-weight:600"></span>
-            </div>
-            <div class="g2">
-              <div class="col">
-                <div class="muted">时间戳 → 时间</div>
-                <div class="row">
-                  <input type="text" id="tsIn" class="grow mono" placeholder="1700000000 或 1700000000000">
-                  <label class="ck"><input type="checkbox" id="tsMs"> 毫秒</label>
-                  <button class="sm" id="tsConv">转换</button>
-                </div>
-                <div class="out" id="tsOut" style="min-height:100px">—</div>
-              </div>
-              <div class="col">
-                <div class="muted">时间 → 时间戳</div>
-                <input type="text" id="dtIn" class="mono" placeholder="2024-01-15 12:00:00 或 2024/1/15">
-                <div class="row">
-                  <button class="sm pri" id="dtConv">转换</button>
-                  <button class="sm" id="dtUseNow">用当前时间填入</button>
-                </div>
-                <div class="out" id="dtOut" style="min-height:100px">—</div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <!-- ========== 13. 密码 / UUID ========== -->
-      <section id="tool-rand" class="tool">
-        <h2 class="th">密码 / UUID</h2>
-        <p class="td">生成强随机密码、UUID v4、随机字符串、数字验证码。</p>
-        <div class="card">
-          <div class="card-h"><h3>密码生成</h3></div>
-          <div class="card-b">
-            <div class="row mb">
-              <label class="inline">长度
-                <input type="number" id="pwLen" min="4" max="128" value="16" style="width:70px">
-              </label>
-              <label class="ck"><input type="checkbox" id="pwLower" checked> 小写 a-z</label>
-              <label class="ck"><input type="checkbox" id="pwUpper" checked> 大写 A-Z</label>
-              <label class="ck"><input type="checkbox" id="pwDigit" checked> 数字 0-9</label>
-              <label class="ck"><input type="checkbox" id="pwSymbol" checked> 符号 !@#</label>
-              <label class="inline">个数
-                <input type="number" id="pwCount" min="1" max="50" value="5" style="width:60px">
-              </label>
-              <button class="pri" id="pwGen">生成</button>
-            </div>
-            <div class="out" id="pwOut" style="min-height:100px">—</div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-h"><h3>UUID / 随机串</h3></div>
-          <div class="card-b">
-            <div class="row mb">
-              <button class="pri" id="uuGen">生成 UUID ×10</button>
-              <button class="sm" id="uuNano">随机 32 位 hex ×10</button>
-              <button class="sm" id="uuBase64">随机 Base32 风格 ×10</button>
-              <button class="sm" id="uuCode">6 位数字验证码</button>
-              <button class="sm" id="uuCopy">复制全部</button>
-            </div>
-            <div class="out" id="uuOut" style="min-height:100px">—</div>
-          </div>
-        </div>
-      </section>
 
       <!-- ========== PDF ========== -->
       <section id="tool-pdf" class="tool">
@@ -1006,374 +942,42 @@
             <div class="out empty" id="pdfOut" style="margin-top:12px;white-space:pre-wrap">结果会显示在这里</div>
           </div>
         </div>
-      </section>
+      
 
-      <!-- ========== Markdown ========== -->
-      <section id="tool-md" class="tool">
-        <h2 class="th">Markdown 编辑器</h2>
-        <p class="td">左写右预览，自动存草稿到本机。可导出 Markdown 或自包含 HTML。</p>
-        <div class="card">
-          <div class="card-h">
-            <h3>编辑</h3>
-            <div class="right">
-              <span class="muted" id="mdStat"></span>
-              <button class="sm" data-md="h2">H2</button>
-              <button class="sm" data-md="h3">H3</button>
-              <button class="sm" data-md="bold"><b>B</b></button>
-              <button class="sm" data-md="italic"><i>I</i></button>
-              <button class="sm" data-md="code">&lt;/&gt;</button>
-              <button class="sm" data-md="link">链接</button>
-              <button class="sm" data-md="img">图</button>
-              <button class="sm" data-md="ul">列表</button>
-              <button class="sm" data-md="ol">序号</button>
-              <button class="sm" data-md="quote">引用</button>
-              <button class="sm" data-md="hr">分割线</button>
-              <button class="sm" data-md="table">表格</button>
-            </div>
-          </div>
-          <div class="card-b">
-            <div class="drop" id="mdDrop" style="margin-bottom:10px;padding:12px">
-              可拖入 .md 文件，或
-              <button class="sm" type="button" id="mdFileBtn">选择文件…</button>
-              <input type="file" id="mdFile" accept=".md,.markdown,.txt" style="display:none">
-            </div>
-            <div class="g2" style="grid-template-columns:1fr 1fr">
-              <textarea id="mdSrc" style="min-height:420px" placeholder="# 标题&#10;&#10;开始写 Markdown…"></textarea>
-              <div class="md-prev" id="mdPreview" style="min-height:420px;overflow:auto;border:1px solid var(--line);border-radius:8px;padding:16px;background:#fff;line-height:1.7"></div>
-            </div>
-            <div class="row" style="margin-top:12px">
-              <button class="sm pri" id="mdDownloadMd">下载 .md</button>
-              <button class="sm" id="mdDownloadHtml">下载 HTML</button>
-              <button class="sm" id="mdCopyMd">复制 Markdown</button>
-              <button class="sm" id="mdCopyHtml">复制 HTML</button>
-              <button class="sm dan" id="mdClear">清空草稿</button>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ========== 房贷 / 利息 ========== -->
-      <section id="tool-calc" class="tool">
-        <h2 class="th">房贷 / 利息计算器</h2>
-        <p class="td">等额本息 / 等额本金月供，以及单利、复利终值估算。</p>
-        <div class="card">
-          <div class="card-h"><h3>房贷</h3></div>
-          <div class="card-b">
-            <div class="row mb">
-              <label class="inline">房价(万)
-                <input type="number" id="mdPrice" value="300" min="0" step="0.1" style="width:90px">
-              </label>
-              <label class="inline">贷款比例 %
-                <input type="number" id="mdRatio" value="70" min="1" max="100" style="width:70px">
-              </label>
-              <label class="inline">年限
-                <input type="number" id="mdYears" value="30" min="1" max="40" style="width:70px"> 年
-              </label>
-              <label class="inline">年利率 %
-                <input type="number" id="mdRate" value="3.1" min="0" step="0.01" style="width:80px">
-              </label>
-              <label class="inline">方式
-                <select id="mdMode">
-                  <option value="eq">等额本息</option>
-                  <option value="prin">等额本金</option>
-                </select>
-              </label>
-              <button class="pri" id="mdCalc">计算</button>
-            </div>
-            <div class="out" id="mdResult" style="min-height:120px">—</div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-h"><h3>单利 / 复利</h3></div>
-          <div class="card-b">
-            <div class="row mb">
-              <label class="inline">本金
-                <input type="number" id="itPrincipal" value="100000" min="0" style="width:110px">
-              </label>
-              <label class="inline">年利率 %
-                <input type="number" id="itRate" value="3" min="0" step="0.01" style="width:80px">
-              </label>
-              <label class="inline">年限
-                <input type="number" id="itYears" value="5" min="0" step="0.1" style="width:70px">
-              </label>
-              <label class="inline">每年计息
-                <input type="number" id="itTimes" value="1" min="1" max="365" style="width:70px"> 次
-              </label>
-              <button class="pri" id="itCalc">计算</button>
-            </div>
-            <div class="out" id="itResult" style="min-height:120px">—</div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ========== 文本统计 ========== -->
-      <section id="tool-tstat" class="tool">
-        <h2 class="th">文本统计</h2>
-        <p class="td">字数、行数、中英数字、标点、段落与预计阅读时间。</p>
-        <div class="card">
-          <div class="card-h">
-            <h3>文本</h3>
-            <div class="right">
-              <button class="sm" id="tsClear">清空</button>
-              <button class="sm pri" id="tsAnalyze">重新统计</button>
-            </div>
-          </div>
-          <div class="card-b">
-            <textarea id="tsText" style="min-height:200px" placeholder="粘贴要统计的文本…"></textarea>
-            <div class="out" id="tsOut" style="margin-top:12px;max-height:360px;overflow:auto;font-family:inherit;white-space:normal"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ========== JWT ========== -->
-      <section id="tool-jwt" class="tool">
-        <h2 class="th">JWT 查看器</h2>
-        <p class="td">本地查看 Header / Payload，不验签、不上传。适合排查登录与权限问题。</p>
+        <!-- ↓ 由独立工具合并而来：PDF 加密 -->
+        <div class="merged"><h2 class="th">PDF 加密</h2>
+        <p class="td">本地给 PDF 添加打开密码，并限制打印 / 复制 / 修改。<b>注意</b>：使用的是 PDF 标准加密（RC4），适合防止随手翻看，<b>不适合高保密文件</b>；已加密的 PDF 无法在这里解密，请用原加密工具或专业软件处理。</p>
         <div class="card">
           <div class="card-b">
             <div class="row mb">
-              <textarea id="jwtIn" class="sm grow" style="min-height:72px" placeholder="粘贴 JWT，可带 Bearer 前缀"></textarea>
+              <label class="inline">密码
+                <input type="text" id="pdfCryptPass" placeholder="打开密码" style="width:180px">
+              </label>
             </div>
-            <div class="row mb">
-              <button class="pri" id="jwtParse">解析</button>
-              <button class="sm" id="jwtClear">清空</button>
-              <span class="muted" id="jwtWarn"></span>
-            </div>
-            <div class="g2">
-              <div>
-                <div class="muted" style="margin-bottom:6px">Header</div>
-                <div class="out" id="jwtHeader" style="min-height:120px">—</div>
-              </div>
-              <div>
-                <div class="muted" style="margin-bottom:6px">Payload</div>
-                <div class="out" id="jwtPayload" style="min-height:120px">—</div>
-              </div>
-            </div>
-            <div style="margin-top:12px">
-              <div class="muted" style="margin-bottom:6px">Signature</div>
-              <div class="out" id="jwtSig" style="min-height:64px">—</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <!-- ========== 图片裁剪 ========== -->
-      <section id="tool-crop" class="tool">
-        <h2 class="th">图片裁剪</h2>
-        <p class="td">拖拽框选裁剪区域，支持常用比例锁、导出 PNG/JPG/WebP。图片不上传。</p>
-        <div class="card">
-          <div class="card-b">
-            <div class="drop" id="cropDrop" style="margin-bottom:12px">
-              <b>点击或拖入图片</b><br>
-              <span class="muted" id="cropInfo">尚未选择图片</span>
+            <div class="drop" id="pdfCryptDrop">
+              <b>选择 PDF…</b><br>
+              <span class="muted" id="pdfCryptInfo">未选择</span>
               <div class="row" style="justify-content:center;margin-top:10px">
-                <button class="sm" type="button" id="cropPick">选择图片…</button>
-                <button class="sm" type="button" id="cropClear">清空</button>
+                <button class="sm" type="button" id="pdfCryptPick">浏览…</button>
               </div>
             </div>
-            <input type="file" id="cropFiles" accept="image/*" style="display:none">
-            <div class="row mb">
-              <label class="inline">比例
-                <select id="cropRatio">
-                  <option value="free">自由</option>
-                  <option value="1:1">1:1</option>
-                  <option value="4:3">4:3</option>
-                  <option value="3:4">3:4</option>
-                  <option value="16:9">16:9</option>
-                  <option value="9:16">9:16</option>
-                </select>
-              </label>
-              <button class="sm" id="cropFull">全图</button>
-              <label class="inline">格式
-                <select id="cropFmt">
-                  <option value="image/png">PNG</option>
-                  <option value="image/jpeg" selected>JPG</option>
-                  <option value="image/webp">WebP</option>
-                </select>
-              </label>
-              <label class="inline">质量
-                <input type="range" id="cropQuality" min="10" max="100" value="92" style="width:90px">
-                <span id="cropQVal" class="mono">92</span>
-              </label>
-              <label class="inline">背景
-                <select id="cropBg">
-                  <option value="transparent">透明</option>
-                  <option value="#ffffff" selected>白</option>
-                  <option value="#000000">黑</option>
-                </select>
-              </label>
-            </div>
-            <div id="cropStage" style="text-align:center;background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:12px;min-height:120px">
-              <canvas id="cropCanvas" style="max-width:100%;cursor:crosshair;display:none"></canvas>
-            </div>
+            <input type="file" id="pdfCryptFiles" accept=".pdf,application/pdf" style="display:none">
             <div class="row" style="margin-top:12px">
-              <button class="pri" id="cropRun">导出裁剪结果</button>
-              <span class="muted" id="cropOutMsg"></span>
+              <button class="pri" id="pdfCryptRun">处理 PDF</button>
+              <span class="muted" id="pdfCryptMsg"></span>
             </div>
           </div>
         </div>
-      </section>
+        </div>
+</section>
 
-      <!-- ========== 长图拼接 ========== -->
-      <section id="tool-stitch" class="tool">
-        <h2 class="th">长图拼接</h2>
-        <p class="td">多张图片拼成横向或竖向长图，可设间距、背景与宽度上限。</p>
-        <div class="card">
-          <div class="card-b">
-            <div class="drop" id="stitchDrop" style="margin-bottom:12px">
-              <b>点击或拖入多张图片</b><br>
-              <span class="muted">按列表顺序拼接，可上下调整</span>
-              <div class="row" style="justify-content:center;margin-top:10px">
-                <button class="sm" type="button" id="stitchPick">选择图片…</button>
-                <button class="sm" type="button" id="stitchClear">清空</button>
-              </div>
-            </div>
-            <input type="file" id="stitchFiles" accept="image/*" multiple style="display:none">
-            <div class="row mb">
-              <label class="inline">方向
-                <select id="stitchDir">
-                  <option value="v">竖向（上下）</option>
-                  <option value="h">横向（左右）</option>
-                </select>
-              </label>
-              <label class="inline">间距(px)
-                <input type="number" id="stitchGap" value="0" min="0" max="80" style="width:70px">
-              </label>
-              <label class="inline">最大边(px)
-                <input type="number" id="stitchMax" value="0" min="0" step="100" style="width:90px" placeholder="0=不缩">
-              </label>
-              <label class="inline">背景
-                <select id="stitchBg">
-                  <option value="#ffffff" selected>白</option>
-                  <option value="transparent">透明</option>
-                  <option value="#000000">黑</option>
-                </select>
-              </label>
-              <label class="inline">格式
-                <select id="stitchFmt">
-                  <option value="image/png" selected>PNG</option>
-                  <option value="image/jpeg">JPG</option>
-                  <option value="image/webp">WebP</option>
-                </select>
-              </label>
-              <label class="inline">质量
-                <input type="range" id="stitchQuality" min="10" max="100" value="92" style="width:90px">
-                <span id="stitchQVal" class="mono">92</span>
-              </label>
-            </div>
-            <div id="stitchList"></div>
-            <div class="row" style="margin-top:12px">
-              <button class="pri" id="stitchRun">生成长图</button>
-              <span class="muted" id="stitchOutMsg"></span>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <!-- ========== AES / HMAC ========== -->
-      <section id="tool-crypto" class="tool">
-        <h2 class="th">AES / HMAC 加解密</h2>
-        <p class="td">基于浏览器 Web Crypto：AES-256-GCM 密文自包含盐与 IV；HMAC 可算消息认证码。密钥只在本机内存中。</p>
-        <div class="card">
-          <div class="card-h">
-            <h3>AES-256-GCM</h3>
-            <div class="right">
-              <label class="inline">迭代
-                <select id="aesIter">
-                  <option value="50000">50k</option>
-                  <option value="100000" selected>100k</option>
-                  <option value="210000">210k</option>
-                </select>
-              </label>
-              <button class="sm" id="aesClear">清空</button>
-              <button class="sm" id="aesCopy">复制结果</button>
-              <button class="sm" id="aesSwap">⇄ 交换</button>
-            </div>
-          </div>
-          <div class="card-b">
-            <div class="row mb">
-              <label class="inline grow">密码
-                <input type="text" id="aesPass" class="grow" placeholder="至少 6 位（不会上传）" style="min-width:180px">
-              </label>
-            </div>
-            <div class="split">
-              <textarea id="aesIn" class="sm" placeholder="加密前贴明文，解密前贴 Base64 密文"></textarea>
-              <textarea id="aesOut" class="sm" readonly placeholder="结果"></textarea>
-            </div>
-            <div class="row" style="margin-top:12px">
-              <button class="pri" id="aesEncrypt">加密 →</button>
-              <button id="aesDecrypt">← 解密</button>
-              <span class="muted" id="aesMeta"></span>
-            </div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-h">
-            <h3>HMAC</h3>
-            <div class="right">
-              <label class="inline">算法
-                <select id="hmacAlgo">
-                  <option value="SHA-256" selected>SHA-256</option>
-                  <option value="SHA-1">SHA-1</option>
-                  <option value="SHA-384">SHA-384</option>
-                  <option value="SHA-512">SHA-512</option>
-                </select>
-              </label>
-              <label class="inline">密钥
-                <select id="hmacKeyMode">
-                  <option value="utf8" selected>文本</option>
-                  <option value="hex">Hex</option>
-                </select>
-              </label>
-              <button class="sm" id="hmacClear">清空</button>
-              <button class="sm" id="hmacCopy">复制</button>
-            </div>
-          </div>
-          <div class="card-b">
-            <div class="muted" id="hmacKeyHint" style="margin-bottom:8px">密钥按 UTF-8 文本解析</div>
-            <div class="row mb">
-              <label class="inline grow">密钥
-                <input type="text" id="hmacKey" class="grow mono" style="min-width:180px">
-              </label>
-            </div>
-            <div class="split">
-              <textarea id="hmacIn" class="sm" placeholder="消息"></textarea>
-              <textarea id="hmacOut" class="sm" readonly placeholder="Hex 签名"></textarea>
-            </div>
-            <div class="row" style="margin-top:12px">
-              <button class="pri" id="hmacRun">计算 HMAC</button>
-              <span class="muted" id="hmacMeta"></span>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <!-- ========== 统一输出目录 ========== -->
-      <section id="tool-outdir" class="tool">
-        <h2 class="th">统一输出目录</h2>
-        <p class="td">设置一个常用文件夹后，图片、PDF、表格等导出会优先写入这里；不设则用浏览器默认下载位置。</p>
-        <div class="card">
-          <div class="card-b">
-            <div class="pathbox">
-              <span class="lbl">输出目录</span>
-              <input id="outDirPath" readonly placeholder="未设置 — 各工具仍可用浏览器默认下载">
-              <button id="outDirBrowse" class="pri">浏览…</button>
-              <button id="outDirClear" class="sm">清除</button>
-            </div>
-            <div class="opts">
-              <span class="muted">需要 Chrome / Edge（File System Access API）。权限会记在本机，重开页面通常可恢复。</span>
-            </div>
-            <details class="help">
-              <summary>哪些工具会使用统一目录？</summary>
-              <div>
-                图片裁剪、长图拼接、图片转换打包 ZIP、PDF 生成、表格/发票导出、二维码 PNG、Markdown 导出等——
-                凡是通过工具箱「保存/下载」的文件，若已设置统一目录则写入该目录，失败时自动回退为浏览器下载。<br><br>
-                批量下载仍使用自己步骤 1 里选择的下载目录（与本设置独立）。
-              </div>
-            </details>
-          </div>
-        </div>
-      </section>
+
+
+
+
+
 
       <!-- ========== 批量重命名 ========== -->
       <section id="tool-rename" class="tool">
@@ -1430,144 +1034,9 @@
         </div>
       </section>
 
-      <!-- ========== PDF 加密 ========== -->
-      <section id="tool-pdfcrypt" class="tool">
-        <h2 class="th">PDF 加密</h2>
-        <p class="td">本地给 PDF 添加打开密码，并限制打印 / 复制 / 修改。<b>注意</b>：使用的是 PDF 标准加密（RC4），适合防止随手翻看，<b>不适合高保密文件</b>；已加密的 PDF 无法在这里解密，请用原加密工具或专业软件处理。</p>
-        <div class="card">
-          <div class="card-b">
-            <div class="row mb">
-              <label class="inline">密码
-                <input type="text" id="pdfCryptPass" placeholder="打开密码" style="width:180px">
-              </label>
-            </div>
-            <div class="drop" id="pdfCryptDrop">
-              <b>选择 PDF…</b><br>
-              <span class="muted" id="pdfCryptInfo">未选择</span>
-              <div class="row" style="justify-content:center;margin-top:10px">
-                <button class="sm" type="button" id="pdfCryptPick">浏览…</button>
-              </div>
-            </div>
-            <input type="file" id="pdfCryptFiles" accept=".pdf,application/pdf" style="display:none">
-            <div class="row" style="margin-top:12px">
-              <button class="pri" id="pdfCryptRun">处理 PDF</button>
-              <span class="muted" id="pdfCryptMsg"></span>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      <!-- ========== 哈希对比 ========== -->
-      <section id="tool-hcmp" class="tool">
-        <h2 class="th">哈希对比</h2>
-        <p class="td">比较两段 SHA-256 是否一致，或计算并对比两个文件的 SHA-256。</p>
-        <div class="card">
-          <div class="card-b">
-            <div class="row mb">
-              <label class="inline">模式
-                <select id="hcMode">
-                  <option value="text">粘贴哈希文本</option>
-                  <option value="file">两个文件</option>
-                </select>
-              </label>
-              <button class="sm" id="hcClear">清空</button>
-            </div>
-            <div id="hcTextMode">
-              <div class="split">
-                <textarea id="hcTextA" class="sm" placeholder="哈希 A"></textarea>
-                <textarea id="hcTextB" class="sm" placeholder="哈希 B"></textarea>
-              </div>
-            </div>
-            <div id="hcFileMode" style="display:none">
-              <div class="pathbox">
-                <span class="lbl">文件 A</span>
-                <input id="hcA" readonly placeholder="未选择">
-                <button id="hcPickA">选择…</button>
-              </div>
-              <div class="pathbox">
-                <span class="lbl">文件 B</span>
-                <input id="hcB" readonly placeholder="未选择">
-                <button id="hcPickB">选择…</button>
-              </div>
-              <input type="file" id="hcFileA" style="display:none">
-              <input type="file" id="hcFileB" style="display:none">
-            </div>
-            <div class="row" style="margin-top:12px">
-              <button class="pri" id="hcRun">开始对比</button>
-            </div>
-            <div class="out empty" id="hcOut" style="margin-top:12px;white-space:pre-wrap;font-family:inherit">结果</div>
-          </div>
-        </div>
-      </section>
 
-      <!-- ========== 颜色 / 色板 ========== -->
-      <section id="tool-color" class="tool">
-        <h2 class="th">颜色 / 色板</h2>
-        <p class="td">HEX / RGB / HSL 互转；从图片提取主色板，点击色块可复制。</p>
-        <div class="card">
-          <div class="card-h">
-            <h3>颜色转换</h3>
-            <div class="right"><button class="sm" id="colorCopy">复制 HEX</button></div>
-          </div>
-          <div class="card-b">
-            <div class="row mb">
-              <input type="color" id="colorPick" value="#2563eb" style="width:48px;height:36px;padding:2px">
-              <input type="text" id="colorIn" class="mono grow" value="#2563eb" placeholder="#2563eb 或 rgb(37,99,235)" style="max-width:220px">
-              <span id="colorSwatch" style="width:40px;height:36px;border-radius:8px;border:1px solid var(--line);background:#2563eb"></span>
-            </div>
-            <div class="out" id="colorOut" style="min-height:90px">—</div>
-          </div>
-        </div>
-        <div class="card">
-          <div class="card-h">
-            <h3>图片色板</h3>
-            <div class="right">
-              <label class="inline">数量
-                <select id="palCount">
-                  <option>4</option><option selected>6</option><option>8</option><option>12</option>
-                </select>
-              </label>
-            </div>
-          </div>
-          <div class="card-b">
-            <div class="drop" id="palDrop">
-              <b>拖入或选择图片</b><br>
-              <span class="muted" id="palInfo">未选择</span>
-              <div class="row" style="justify-content:center;margin-top:10px">
-                <button class="sm" type="button" id="palPick">选择图片…</button>
-              </div>
-            </div>
-            <input type="file" id="palFile" accept="image/*" style="display:none">
-            <div id="palOut" style="margin-top:12px"></div>
-          </div>
-        </div>
-      </section>
 
-      <!-- ========== SQL ========== -->
-      <section id="tool-sql" class="tool">
-        <h2 class="th">SQL 格式化</h2>
-        <p class="td">本地美化 SQL（关键字大写、子句换行、逗号断行）。不联网、不解析执行。</p>
-        <div class="card">
-          <div class="card-h">
-            <h3>SQL</h3>
-            <div class="right">
-              <span class="muted" id="sqlStat"></span>
-              <button class="sm" id="sqlClear">清空</button>
-              <button class="sm" id="sqlMin">压缩空白</button>
-              <button class="sm" id="sqlCopy">复制</button>
-            </div>
-          </div>
-          <div class="card-b">
-            <div class="split">
-              <textarea id="sqlIn" class="sm" style="min-height:220px" placeholder="select id,name,age from users where age>18 order by id"></textarea>
-              <textarea id="sqlOut" class="sm" readonly style="min-height:220px" placeholder="结果"></textarea>
-            </div>
-            <div class="row" style="margin-top:12px">
-              <button class="pri" id="sqlRun">格式化</button>
-            </div>
-          </div>
-        </div>
-      </section>
 
       <!-- ========== 音视频转码 ========== -->
       <section id="tool-av" class="tool">
@@ -1747,8 +1216,35 @@
             <div class="muted" id="ctxMsg" style="margin-top:10px"></div>
           </div>
         </div>
-      </section>
-      </section>
+      
+
+        <!-- ↓ 由独立工具合并而来：统一输出目录 -->
+        <div class="merged"><h2 class="th">统一输出目录</h2>
+        <p class="td">设置一个常用文件夹后，图片、PDF、表格等导出会优先写入这里；不设则用浏览器默认下载位置。</p>
+        <div class="card">
+          <div class="card-b">
+            <div class="pathbox">
+              <span class="lbl">输出目录</span>
+              <input id="outDirPath" readonly placeholder="未设置 — 各工具仍可用浏览器默认下载">
+              <button id="outDirBrowse" class="pri">浏览…</button>
+              <button id="outDirClear" class="sm">清除</button>
+            </div>
+            <div class="opts">
+              <span class="muted">需要 Chrome / Edge（File System Access API）。权限会记在本机，重开页面通常可恢复。</span>
+            </div>
+            <details class="help">
+              <summary>哪些工具会使用统一目录？</summary>
+              <div>
+                图片裁剪、长图拼接、图片转换打包 ZIP、PDF 生成、表格/发票导出、二维码 PNG、Markdown 导出等——
+                凡是通过工具箱「保存/下载」的文件，若已设置统一目录则写入该目录，失败时自动回退为浏览器下载。<br><br>
+                批量下载仍使用自己步骤 1 里选择的下载目录（与本设置独立）。
+              </div>
+            </details>
+          </div>
+        </div>
+        </div>
+</section>
+
 
     </div>
   </main>
@@ -1763,21 +1259,14 @@
 <script src="js/download.js"></script>
 <script src="js/hash.js"></script>
 <script src="js/text.js"></script>
-<script src="js/json.js"></script>
-<script src="js/encode.js"></script>
-<script src="js/regexdiff.js"></script>
+<script src="js/diff.js"></script>
 <script src="js/convert.js"></script>
 <script src="js/image.js"></script>
 <script src="js/imgedit.js"></script>
 <script src="js/invoice.js"></script>
 <script src="js/qrcode.js"></script>
-<script src="js/extras.js"></script>
 <script src="js/pdf.js"></script>
-<script src="js/markdown.js"></script>
-<script src="js/office.js"></script>
-<script src="js/aescrypto.js"></script>
 <script src="js/rename.js"></script>
-<script src="js/extra-tools.js"></script>
 <script src="js/folderorg.js"></script>
 <script src="js/desktop.js"></script>
 <script src="js/app.js"></script>

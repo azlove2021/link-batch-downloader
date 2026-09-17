@@ -28,6 +28,24 @@ function warn(cond, msg) {
   if (!cond) warnings.push(msg);
 }
 
+/** 返回所有 <section id="tool-X"> 的 {id, start, innerStart, end}（按文档顺序） */
+function findSections(html) {
+  const re = /<section\b[^>]*>|<\/section>/g;
+  const stack = [];
+  const out = [];
+  let m;
+  while ((m = re.exec(html))) {
+    if (m[0].startsWith('</')) {
+      const s = stack.pop();
+      if (s) out.push({ id: s.id, start: s.start, innerStart: s.innerStart, end: re.lastIndex });
+    } else {
+      const idm = m[0].match(/id="tool-([^"]+)"/);
+      stack.push({ id: idm ? idm[1] : null, start: m.index, innerStart: re.lastIndex });
+    }
+  }
+  return out;
+}
+
 /* ---------- 1. 读取工具注册表（js/app.js） ---------- */
 const appJs = read('js/app.js');
 
@@ -92,9 +110,70 @@ if (fs.existsSync(jsDir)) {
   }
 }
 
-/* ---------- 6. web/ 是生成目录，不应被当成源码 ---------- */
-warn(!fs.existsSync(path.join(ROOT, 'web', 'js', 'app.js')) || true, '');
-warnings.length = 0; // 保留位置，当前无警告项
+/* ---------- 6. JS 里引用的元素 id 必须真实存在 ----------
+ * 这是删减面板之后最容易踩的坑：面板删了、JS 没删，打开页面就在控制台报错，
+ * 而且往往会让整个功能静默失效。 */
+const htmlIds = new Set();
+for (const m of html.matchAll(/\bid="([^"]+)"/g)) htmlIds.add(m[1]);
+
+const runtimeJs = fs.readdirSync(jsDir).filter((f) => f.endsWith('.js'));
+
+/* JS 自己动态创建的元素 id：写得再安全（if(el) 判断）也经不起面板被删，
+ * 这里把它们收集起来，避免误报。 */
+const createdIds = new Set(['dashMoreBtn']);
+for (const f of runtimeJs) {
+  const src = read(path.join('js', f));
+  for (const m of src.matchAll(/\.id\s*=\s*'([A-Za-z][\w-]*)'/g)) createdIds.add(m[1]);
+  for (const m of src.matchAll(/\bid="([A-Za-z][\w-]*)"/g)) createdIds.add(m[1]); // innerHTML 里拼出来的
+}
+
+let idRefs = 0;
+let dynamicRefs = 0;
+for (const f of runtimeJs) {
+  const src = read(path.join('js', f));
+  const refs = new Set();
+  for (const m of src.matchAll(/\$\('([A-Za-z][\w-]*)'\)/g)) refs.add(m[1]);
+  for (const m of src.matchAll(/getElementById\('([A-Za-z][\w-]*)'\)/g)) refs.add(m[1]);
+  for (const id of refs) {
+    idRefs++;
+    if (createdIds.has(id)) { dynamicRefs++; continue; }
+    check(htmlIds.has(id),
+      `js/${f} 引用了不存在的元素 #${id}（面板已删但代码还在 → 打开页面会报错）`);
+  }
+}
+
+/* ---------- 7. HTML 结构完整性 ----------
+ * 批量删减/搬移面板之后最容易出的问题：标签不配对、id 重复。 */
+const divOpen = (html.match(/<div\b/g) || []).length;
+const divClose = (html.match(/<\/div>/g) || []).length;
+check(divOpen === divClose, `<div> 标签不配对：开 ${divOpen} / 闭 ${divClose}`);
+
+const secOpen = (html.match(/<section\b/g) || []).length;
+const secClose = (html.match(/<\/section>/g) || []).length;
+check(secOpen === secClose, `<section> 标签不配对：开 ${secOpen} / 闭 ${secClose}`);
+
+const allIds = [...html.matchAll(/\bid="([^"]+)"/g)].map((m) => m[1]);
+const dupIds = allIds.filter((id, i) => allIds.indexOf(id) !== i);
+check(dupIds.length === 0, `index.html 存在重复 id：${[...new Set(dupIds)].join(', ') || '无'}`);
+
+/* ---------- 8. 合并进大工具的面板确实落在了父面板内部 ---------- */
+const MERGED = [
+  ['哈希对比', 'hash'],
+  ['图片裁剪', 'image'],
+  ['长图拼接', 'image'],
+  ['PDF 加密', 'pdf'],
+  ['统一输出目录', 'desk'],
+];
+const sectionsNow = findSections(html);
+for (const [title, parent] of MERGED) {
+  const marker = `由独立工具合并而来：${title}`;
+  const idx = html.indexOf(marker);
+  check(idx >= 0, `合并标记缺失：「${title}」应并入 ${parent} 面板`);
+  if (idx < 0) continue;
+  const s = sectionsNow.find((x) => x.id === parent);
+  check(!!s && idx > s.start && idx < s.end,
+    `「${title}」没有落在 ${parent} 面板内部（合并位置不对）`);
+}
 
 /* ---------- 输出 ---------- */
 console.log('');
