@@ -27,7 +27,7 @@ var TOOLS = [
   { id:'diff', name:'文本对比', desc:'行级 Diff 高亮，快速找差异', k:'diff 对比 差异 比较 两份 找出不同', tier:1, grp:'数据与表格' },
   { id:'convert', name:'表格互转', desc:'CSV/TSV/JSON/Markdown/Excel', k:'csv tsv 表格 excel markdown json 互转 转换', tier:1, grp:'数据与表格' },
 
-  { id:'invoice', name:'发票提取', desc:'发票号码/金额/购销方，导出表格', k:'invoice 发票 报销 税号 金额 对账', tier:2, grp:'办公实用' },
+  { id:'invoice', name:'发票提取', desc:'图片OCR、号码/金额/购销方、重复检测、台账比对', k:'invoice 发票 报销 税号 金额 对账 ocr 识别 图片 重复 台账', tier:2, grp:'办公实用' },
   { id:'pdf', name:'PDF 工具', desc:'合并、拆分、旋转、页码、加密码', k:'pdf 合并 拆分 旋转 页码 文档 密码 加密', tier:2, grp:'格式转换' },
   { id:'text', name:'文本处理', desc:'去重、排序、多行转一行、提取号码链接、脱敏打码、粘贴清洗', k:'text 文本 多行 逗号 去重 提取 清洗 换行 脱敏 打码 手机号 身份证 邮箱 全角 半角 零宽', tier:2, grp:'数据与表格' },
   { id:'image', name:'图片工具', desc:'压缩转换、压到指定KB、裁剪、长图拼接', k:'image 图片 压缩 转换 水印 裁剪 拼接 长图 kb 指定大小', tier:2, grp:'格式转换' },

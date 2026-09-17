@@ -3,8 +3,12 @@
 (function(){
 var U = TB.util;
 var $ = U.$, notice = U.notice, esc = U.esc;
+var IC = TB.invoiceCore || {};   /* 纯函数核心：js/invoice-core.js（重复检测 / 台账比对） */
 
 var records = [];
+var dupMap = {};                 /* 归一化号码 → [记录下标]，仅含重复组 */
+var ledger = null, ledgerName = '';   /* 台账索引（IC.buildLedger 的结果） */
+var ledgerFlags = [];            /* 与 records 对齐：true 在册 / false 没有 / null 无号码 */
 
 /* ---------- 输入 ---------- */
 $('invPasteBtn').onclick = async function(){
@@ -21,6 +25,8 @@ $('invPasteBtn').onclick = async function(){
 $('invClear').onclick = function(){
   $('invText').value = '';
   records = [];
+  dupMap = {};
+  ledgerFlags = [];
   $('invTableWrap').innerHTML = '';
   $('invStat').textContent = '';
 };
@@ -50,6 +56,8 @@ async function ingestFiles(fileList){
         else parts.push('#### ' + f.name + '\n（未提取到文字层，若是扫描件请先 OCR 后粘贴文字）');
       }else if(/\.(txt|md|csv|log)$/i.test(f.name) || /^text\//.test(f.type)){
         parts.push('#### ' + f.name + '\n' + await f.text());
+      }else if(/^image\//.test(f.type) || /\.(png|jpe?g|bmp|webp|tif|tiff)$/i.test(f.name)){
+        notice('warn','图片发票请点右上「识别图片发票…（桌面）」——拖入的文件拿不到本机路径，无法调用系统 OCR：' + esc(f.name));
       }else{
         notice('warn','跳过不支持的文件：' + f.name);
       }
@@ -307,11 +315,43 @@ $('invParse').onclick = function(){
   var blocks = splitInvoices(text);
   if(!blocks.length) blocks = [text];
   records = blocks.map(parseOne);
+  refreshFlags();
   renderTable();
+  updateStat();
+  var dupGroups = Object.keys(dupMap).length;
   var ok = records.filter(function(r){ return r.number || r.total; }).length;
-  $('invStat').textContent = '解析 ' + records.length + ' 张，识别到关键字段 ' + ok + ' 张';
-  notice(ok ? 'info' : 'warn', '解析完成：共 ' + records.length + ' 条');
+  notice(dupGroups ? 'warn' : (ok ? 'info' : 'warn'),
+    dupGroups ? ('解析完成：发现 ' + dupGroups + ' 组重复发票号，已标红（防重复报销）')
+              : ('解析完成：共 ' + records.length + ' 条'));
 };
+
+function refreshFlags(){
+  dupMap = IC.findDuplicates ? IC.findDuplicates(records) : {};
+  ledgerFlags = (ledger && IC.matchLedger) ? IC.matchLedger(ledger, records)
+                                           : records.map(function(){ return null; });
+}
+
+function updateStat(){
+  var ok = records.filter(function(r){ return r.number || r.total; }).length;
+  var stat = '解析 ' + records.length + ' 张，识别到关键字段 ' + ok + ' 张';
+  var dupGroups = Object.keys(dupMap).length;
+  if(dupGroups){
+    var dupCount = 0;
+    Object.keys(dupMap).forEach(function(k){ dupCount += dupMap[k].length; });
+    stat += '；⚠ ' + dupGroups + ' 组重复号码（共 ' + dupCount + ' 张）';
+  }
+  if(ledger){
+    var has = 0, miss = 0;
+    ledgerFlags.forEach(function(f){ if(f === true) has++; else if(f === false) miss++; });
+    stat += '；台账（' + ledgerName + '）：' + has + ' 在册 / ' + miss + ' 未找到';
+  }
+  $('invStat').textContent = stat;
+}
+
+function isDup(r){
+  var n = IC.normNumber ? IC.normNumber(r.number) : '';
+  return !!(n && dupMap[n] && dupMap[n].length >= 2);
+}
 
 var COLS = [
   ['number','发票号码'],
@@ -331,36 +371,126 @@ var COLS = [
 function renderTable(){
   var wrap = $('invTableWrap');
   if(!records.length){ wrap.innerHTML=''; return; }
+  var onlyMissing = ledger && $('invOnlyMissing').checked;
   var h = '<div class="rtable"><table><thead><tr><th>#</th>';
   COLS.forEach(function(c){ h += '<th>'+c[1]+'</th>'; });
+  if(ledger) h += '<th>台账</th>';
   h += '</tr></thead><tbody>';
   records.forEach(function(r, i){
-    h += '<tr><td>'+(i+1)+'</td>';
+    if(onlyMissing && ledgerFlags[i] !== false) return;
+    var dup = isDup(r);
+    h += '<tr' + (dup ? ' style="background:#fff1f0"' : '') + '><td>'+(i+1)+'</td>';
     COLS.forEach(function(c){
-      h += '<td>' + esc(r[c[0]] || '') + '</td>';
+      var v = esc(r[c[0]] || '');
+      if(c[0] === 'number' && dup) v = '<b style="color:#c0392b">⚠ ' + v + '</b>';
+      h += '<td>' + v + '</td>';
     });
+    if(ledger){
+      var f = ledgerFlags[i];
+      h += '<td>' + (f === true ? '✓ 在册'
+            : f === false ? '<b style="color:#c0392b">✗ 台账没有</b>'
+            : '<span class="muted">无号码</span>') + '</td>';
+    }
     h += '</tr>';
   });
   h += '</tbody></table></div>';
   wrap.innerHTML = h;
 }
 
+$('invOnlyMissing').addEventListener('change', renderTable);
+
+/* ---------- 图片发票批量 OCR（桌面版 · Windows 系统 OCR，全程离线） ----------
+ * 后端 ocr_image：先系统 OCR（零依赖），失败再尝试本机 Tesseract。
+ * 注意：拖拽进来的 File 拿不到本机路径，所以这里走系统文件对话框选择。 */
+$('invOcrBtn').onclick = async function(){
+  var D = TB.desktop;
+  if(!D || !D.isDesktop()){
+    notice('err','图片 OCR 需桌面版；网页版请先用其它工具识别文字后粘贴');
+    return;
+  }
+  var files = null;
+  try{ files = await D.pickFiles(['png','jpg','jpeg','bmp','webp','tif','tiff']); }
+  catch(e){ notice('err','选择失败：'+esc(String(e.message||e))); return; }
+  if(!files || !files.length) return;
+  var btn = this; btn.disabled = true;
+  var env = D.env ? D.env() : null;
+  var parts = [], failed = [];
+  for(var i=0;i<files.length;i++){
+    btn.textContent = '识别中 ' + (i+1) + '/' + files.length + ' …';
+    try{
+      var text = await D.invoke('ocr_image', { path: files[i].path, tesseract: (env && env.tesseract) || null });
+      parts.push('#### ' + files[i].name + '\n' + ((text && text.trim()) ? text.trim() : '（未识别到文字）'));
+    }catch(e){
+      failed.push(files[i].name + '：' + String(e.message || e).slice(0,60));
+    }
+  }
+  btn.disabled = false; btn.textContent = '识别图片发票…（桌面）';
+  if(parts.length){
+    $('invText').value = ($('invText').value ? $('invText').value + '\n\n====\n\n' : '') + parts.join('\n\n====\n\n');
+    $('invParse').click();   // OCR 完自动解析，少点一步
+  }
+  if(failed.length){
+    notice('warn','OCR 完成 ' + parts.length + ' 张，失败 ' + failed.length + ' 张（' + esc(failed[0]) + (failed.length>1?' 等':'') + '）');
+  }else if(parts.length){
+    notice('info','OCR 完成并已解析 ' + parts.length + ' 张（全程离线）');
+  }
+};
+
+/* ---------- 台账比对：载入公司台账 xlsx/csv，按发票号码找「台账里没有的票」 ---------- */
+$('invLedgerBtn').onclick = function(){ $('invLedger').click(); };
+$('invLedger').onchange = async function(){
+  var f = this.files && this.files[0];
+  this.value = '';
+  if(!f) return;
+  if(!records.length){ notice('warn','请先解析发票，再载入台账比对'); return; }
+  try{
+    var rows;
+    if(/\.(xlsx|xls)$/i.test(f.name)){
+      if(!window.XLSX) throw new Error('Excel 组件未加载');
+      var wb = XLSX.read(new Uint8Array(await f.arrayBuffer()), {type:'array'});
+      rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, raw:false, defval:''});
+    }else{
+      rows = U.parseCsv(await f.text());
+    }
+    ledger = IC.buildLedger(rows);
+    ledgerName = f.name;
+    refreshFlags();
+    renderTable();
+    updateStat();
+    var miss = ledgerFlags.filter(function(x){ return x === false; }).length;
+    notice(miss ? 'warn' : 'info',
+      '台账已载入（' + esc(ledgerName) + '）：' + miss + ' 张发票台账里没有' + (miss ? '，已标出' : ''));
+  }catch(e){
+    notice('err','台账读取失败：'+esc(String(e.message||e)));
+  }
+};
+
+/* ---------- 导出（自动带上重复检测 / 台账比对列） ---------- */
+function exportHeaders(){
+  var hs = COLS.map(function(c){ return c[1]; });
+  if(Object.keys(dupMap).length) hs.push('重复检测');
+  if(ledger) hs.push('台账比对');
+  return hs;
+}
+function exportRow(r, i){
+  var row = COLS.map(function(c){ return r[c[0]] || ''; });
+  if(Object.keys(dupMap).length) row.push(isDup(r) ? '重复' : '');
+  if(ledger) row.push(ledgerFlags[i] === true ? '在册' : ledgerFlags[i] === false ? '台账没有' : '无号码');
+  return row;
+}
+
 $('invCsv').onclick = function(){
   if(!records.length){ notice('warn','请先解析'); return; }
-  var rows = [COLS.map(function(c){ return c[1]; })];
-  records.forEach(function(r){
-    rows.push(COLS.map(function(c){ return r[c[0]] || ''; }));
-  });
+  var rows = [exportHeaders()];
+  records.forEach(function(r, i){ rows.push(exportRow(r, i)); });
   U.saveBlob(new Blob(['﻿' + U.toCsv(rows, ',')], {type:'text/csv;charset=utf-8'}), '发票信息.csv');
   notice('info','已导出 CSV');
 };
 $('invXlsx').onclick = async function(){
   if(!records.length){ notice('warn','请先解析'); return; }
   try{
-    var rows = records.map(function(r){
-      return COLS.map(function(c){ return r[c[0]] || ''; });
-    });
-    var blob = await U.makeXlsx(COLS.map(function(c){ return c[1]; }), rows, '发票');
+    var rows = records.map(function(r, i){ return exportRow(r, i); });
+    var blob = await U.makeXlsx(exportHeaders(), rows, '发票');
     U.saveBlob(blob, '发票信息.xlsx');
     notice('info','已导出 Excel');
   }catch(e){ notice('err','导出失败：'+esc(e.message)); }

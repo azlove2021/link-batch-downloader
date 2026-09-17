@@ -788,12 +788,13 @@
       <!-- ========== 10. 发票提取 ========== -->
       <section id="tool-invoice" class="tool">
         <h2 class="th">发票信息提取</h2>
-        <p class="td">从电子发票文本 / PDF 中提取发票号码、日期、金额等字段，批量导出表格。适合已复制文字或带文字层的 PDF。</p>
+        <p class="td">提取发票号码、日期、金额、购销方，批量导出表格；桌面版可直接批量 OCR 图片发票（Windows 系统识别，全程离线）；自动检测重复发票号；可载入台账比对「哪些发票台账里没有」。</p>
         <div class="card">
           <div class="card-h">
             <h3>输入</h3>
             <div class="right">
               <button class="sm" id="invPasteBtn">从剪贴板粘贴</button>
+              <button class="sm pri" id="invOcrBtn" title="调用 Windows 系统 OCR 批量识别图片发票，全程离线">识别图片发票…（桌面）</button>
               <button class="sm" id="invPdfBtn">从 PDF 提取文字…</button>
               <input type="file" id="invPdf" accept=".pdf,application/pdf" multiple style="display:none">
               <button class="sm" id="invTxtBtn">从 txt 批量…</button>
@@ -803,11 +804,14 @@
           <div class="card-b">
             <div class="drop" id="invDrop">
               <b>粘贴发票文字</b>，或把 .txt / .pdf 拖到这里<br>
-              <span class="muted">支持一次多张（用空行或「====」分隔）；图片发票请先 OCR 复制文字</span>
+              <span class="muted">支持一次多张（用空行或「====」分隔）；图片发票点右上「识别图片发票」（桌面版内置离线 OCR）</span>
             </div>
             <textarea id="invText" style="margin-top:12px;min-height:160px" placeholder="电子发票（普通发票）&#10;发票代码：011002100111&#10;发票号码：12345678&#10;开票日期：2024年01月15日&#10;价税合计（大写）：壹佰元整&#10;¥100.00"></textarea>
             <div class="row" style="margin-top:12px">
               <button class="pri" id="invParse">解析发票字段</button>
+              <button class="sm" id="invLedgerBtn">载入台账比对…</button>
+              <input type="file" id="invLedger" accept=".xlsx,.xls,.csv" style="display:none">
+              <label class="ck" title="载入台账后可用：只显示台账里找不到的发票"><input type="checkbox" id="invOnlyMissing"> 只看台账没有的</label>
               <button class="sm" id="invClear">清空</button>
               <button class="sm" id="invCsv">导出 CSV</button>
               <button class="sm" id="invXlsx">导出 Excel</button>
@@ -817,10 +821,11 @@
             <details class="help">
               <summary>说明：图片 OCR 与 PDF 支持范围</summary>
               <div>
-                本工具<b>完全离线</b>，不内置体积巨大的 OCR 引擎。推荐流程：<br>
+                本工具<b>完全离线</b>——发票全是敏感信息，云端 OCR 要上传原件，这里一律不出本机。推荐流程：<br>
                 1. 电子发票 PDF：点「从 PDF 提取文字」——对带文字层的电子发票通常可直接提取；<br>
-                2. 扫描件 / 图片：用微信、QQ 或专业 OCR 先识别出文字，再粘贴到上方；<br>
-                3. 也可把文字存成 .txt 拖进来，一次解析多张。<br><br>
+                2. 扫描件 / 图片：<b>桌面版</b>点「识别图片发票」批量选择，自动调用 Windows 系统 OCR（系统识别失败时回退本机 Tesseract），识别完自动解析；网页版可先识别成文字再粘贴；<br>
+                3. 也可把文字存成 .txt 拖进来，一次解析多张；<br>
+                4. 解析后自动<b>检测重复发票号</b>（标红，防重复报销）；「载入台账比对」用公司台账 xlsx/csv 标出<b>台账里没有的发票</b>，导出自动带上比对结果。<br><br>
                 自动识别字段：发票代码 / 号码、开票日期、校验码后 6 位、购买方 & 销售方名称与税号、
                 金额、税额、价税合计（大小写）。识别失败的字段可手工在表格中核对后再导出。
               </div>
@@ -1307,6 +1312,7 @@
 <script src="js/convert.js"></script>
 <script src="js/image.js"></script>
 <script src="js/imgedit.js"></script>
+<script src="js/invoice-core.js"></script>
 <script src="js/invoice.js"></script>
 <script src="js/qrcode.js"></script>
 <script src="js/pdf.js"></script>

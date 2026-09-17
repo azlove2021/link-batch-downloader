@@ -35,6 +35,22 @@ async function pickFile(exts){
   return { path: path, name: path.split(/[\\/]/).pop() };
 }
 
+/* 多选版本：发票批量 OCR 等场景用（返回 [{path, name}…]，取消返回 null） */
+async function pickFiles(exts){
+  var t = tauri();
+  if (!t || !t.dialog || !t.dialog.open) return null;
+  var p = await t.dialog.open({
+    multiple: true,
+    filters: [{ name: '文件', extensions: exts || ['*'] }]
+  });
+  if (!p) return null;
+  var arr = Array.isArray(p) ? p : [p];
+  return arr.map(function(item){
+    var path = String(item);
+    return { path: path, name: path.split(/[\\/]/).pop() };
+  });
+}
+
 /* ---------- 环境检测 ---------- */
 var envCache = null;
 async function refreshEnv(){
@@ -293,5 +309,9 @@ if (isDesktop() && tauri().event && tauri().event.listen){
   });
 }
 
-TB.desktop = { invoke: invoke, isDesktop: isDesktop, refreshEnv: refreshEnv };
+TB.desktop = {
+  invoke: invoke, isDesktop: isDesktop, refreshEnv: refreshEnv,
+  pickFile: pickFile, pickFiles: pickFiles,
+  env: function(){ return envCache; }
+};
 })();
