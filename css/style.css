@@ -384,3 +384,13 @@ details.help div{margin-top:8px;padding:11px 14px;background:#f8fafc;border-radi
 
 /* ============ 合并进同一工具的旧面板 ============ */
 .merged{margin-top:26px;padding-top:18px;border-top:2px dashed var(--line)}
+
+/* ============ 数据工作台：清洗步骤胶囊 / 差异行高亮 ============ */
+#dwPipe{display:flex;flex-wrap:wrap;gap:8px;align-items:center;min-height:26px}
+.chip{display:inline-flex;align-items:center;gap:4px;background:#f1f5f9;border:1px solid var(--line);
+  border-radius:999px;padding:3px 6px 3px 11px;font-size:12.5px;color:var(--tx2);line-height:1.6}
+.chip button.x{border:none;background:transparent;padding:0 3px;font-size:14px;line-height:1;
+  color:var(--tx3);cursor:pointer;border-radius:999px;box-shadow:none}
+.chip button.x:hover:not(:disabled){background:var(--err-bg);color:var(--err)}
+.rtable tr.warn td,.rtable tr.warn:hover td{background:#fffbeb}
+.rtable tr.diff td,.rtable tr.diff:hover td{background:#fef2f2}

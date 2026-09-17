@@ -5,7 +5,7 @@
   "description": "Office toolbox desktop shell (Tauri)",
   "type": "module",
   "scripts": {
-    "test": "node tests/rename-core.test.cjs && node tests/consistency.test.cjs",
+    "test": "node tests/rename-core.test.cjs && node tests/data-core.test.cjs && node tests/consistency.test.cjs",
     "bump": "node scripts/bump-version.cjs",
     "sync": "node scripts/sync-web.cjs",
     "dev": "npm run sync && tauri dev",

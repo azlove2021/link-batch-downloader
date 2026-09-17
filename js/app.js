@@ -17,29 +17,30 @@ var $ = U.$, notice = U.notice;
   }
 })();
 
+/* tier：1 = 日常常用（首页大卡） / 2 = 偶尔用 / 3 = 更多（默认折叠）
+   grp ：侧栏里的分组（见下方 GRP_ORDER）——侧栏菜单由这里生成，不再手写 */
 var TOOLS = [
-  /* tier 1 = 日常常用（首页大卡） / 2 = 偶尔用 / 3 = 更多（默认折叠） */
-  { id:'home', name:'工具总览', desc:'全部工具入口', k:'home 首页 总览 工具', tier:0 },
+  { id:'home', name:'工具总览', desc:'全部工具入口', k:'home 首页 总览 工具', tier:0, grp:'' },
 
-  { id:'data', name:'数据工作台', desc:'大表筛选、清洗、透视、双表对账', k:'csv excel 数据 分析 清洗 对账 比对 表格 透视 汇总 合并 拆分', tier:1 },
-  { id:'rename', name:'批量重命名', desc:'规则预览、前缀编号、原地改名', k:'rename 重命名 批量 编号 文件名 扫描件', tier:1 },
-  { id:'diff', name:'文本对比', desc:'行级 Diff 高亮，快速找差异', k:'diff 对比 差异 比较 两份 找出不同', tier:1 },
-  { id:'convert', name:'表格互转', desc:'CSV/TSV/JSON/Markdown/Excel', k:'csv tsv 表格 excel markdown json 互转 转换', tier:1 },
+  { id:'data', name:'数据工作台', desc:'多表合并、清洗、按列拆表、对账、透视', k:'csv excel 数据 分析 清洗 对账 比对 表格 透视 汇总 合并 拆分 整理', tier:1, grp:'数据与表格' },
+  { id:'rename', name:'批量重命名', desc:'日期提取、规则预览、可撤销、有记录', k:'rename 重命名 批量 编号 文件名 扫描件 日期', tier:1, grp:'文件与整理' },
+  { id:'diff', name:'文本对比', desc:'行级 Diff 高亮，快速找差异', k:'diff 对比 差异 比较 两份 找出不同', tier:1, grp:'数据与表格' },
+  { id:'convert', name:'表格互转', desc:'CSV/TSV/JSON/Markdown/Excel', k:'csv tsv 表格 excel markdown json 互转 转换', tier:1, grp:'数据与表格' },
 
-  { id:'invoice', name:'发票提取', desc:'发票号码/金额/购销方，导出表格', k:'invoice 发票 报销 税号 金额 对账', tier:2 },
-  { id:'pdf', name:'PDF 工具', desc:'合并、拆分、旋转、页码、加密码', k:'pdf 合并 拆分 旋转 页码 文档 密码 加密', tier:2 },
-  { id:'text', name:'文本处理', desc:'去重、排序、多行转一行、提取号码链接', k:'text 文本 多行 逗号 去重 提取 清洗 换行', tier:2 },
-  { id:'image', name:'图片工具', desc:'压缩转换、裁剪、长图拼接', k:'image 图片 压缩 转换 水印 裁剪 拼接 长图', tier:2 },
-  { id:'folder', name:'文件夹归类', desc:'按扩展名/日期/关键字自动归子文件夹', k:'文件夹 归类 整理 发票 周报 自动', tier:2 },
-  { id:'dl', name:'批量下载', desc:'扫 txt 清单，分目录批量下载，断点续传', k:'download 下载 链接 批量 txt', tier:2 },
-  { id:'hash', name:'哈希校验', desc:'文件/文件夹 SHA-256 / MD5，可对比', k:'hash sha md5 校验 摘要 对比 一致', tier:2 },
+  { id:'invoice', name:'发票提取', desc:'发票号码/金额/购销方，导出表格', k:'invoice 发票 报销 税号 金额 对账', tier:2, grp:'办公实用' },
+  { id:'pdf', name:'PDF 工具', desc:'合并、拆分、旋转、页码、加密码', k:'pdf 合并 拆分 旋转 页码 文档 密码 加密', tier:2, grp:'格式转换' },
+  { id:'text', name:'文本处理', desc:'去重、排序、多行转一行、提取号码链接', k:'text 文本 多行 逗号 去重 提取 清洗 换行', tier:2, grp:'数据与表格' },
+  { id:'image', name:'图片工具', desc:'压缩转换、裁剪、长图拼接', k:'image 图片 压缩 转换 水印 裁剪 拼接 长图', tier:2, grp:'格式转换' },
+  { id:'folder', name:'文件夹归类', desc:'按扩展名/日期/关键字自动归子文件夹', k:'文件夹 归类 整理 发票 周报 自动', tier:2, grp:'文件与整理' },
+  { id:'dl', name:'批量下载', desc:'扫 txt 清单，分目录批量下载，断点续传', k:'download 下载 链接 批量 txt', tier:2, grp:'文件与整理' },
+  { id:'hash', name:'哈希校验', desc:'文件/文件夹 SHA-256 / MD5，可对比', k:'hash sha md5 校验 摘要 对比 一致', tier:2, grp:'文件与整理' },
 
-  { id:'qr', name:'二维码生成', desc:'文本链接转二维码 PNG', k:'qr 二维码 条码', tier:3 },
-  { id:'av', name:'音视频转码', desc:'本机 FFmpeg 转换（桌面版）', k:'ffmpeg 音视频 转码 mp4 mp3 gif 桌面', tier:3 },
-  { id:'offconv', name:'Office→PDF', desc:'LibreOffice 转 PDF（桌面版）', k:'word excel ppt pdf libreoffice office 桌面', tier:3 },
-  { id:'ocr', name:'图片 OCR', desc:'扫描件识别文字（桌面版）', k:'ocr 识别 扫描 发票 桌面', tier:3 },
-  { id:'clean', name:'大文件清理', desc:'扫描大文件进回收站（桌面版）', k:'清理 大文件 c盘 回收站 桌面', tier:3 },
-  { id:'desk', name:'桌面设置', desc:'托盘、右键菜单、依赖检测、输出目录', k:'托盘 右键 设置 桌面 ffmpeg 检测 输出目录', tier:3 }
+  { id:'qr', name:'二维码生成', desc:'文本链接转二维码 PNG', k:'qr 二维码 条码', tier:3, grp:'办公实用' },
+  { id:'av', name:'音视频转码', desc:'本机 FFmpeg 转换（桌面版）', k:'ffmpeg 音视频 转码 mp4 mp3 gif 桌面', tier:3, grp:'格式转换' },
+  { id:'offconv', name:'Office→PDF', desc:'LibreOffice 转 PDF（桌面版）', k:'word excel ppt pdf libreoffice office 桌面', tier:3, grp:'格式转换' },
+  { id:'ocr', name:'图片 OCR', desc:'扫描件识别文字（桌面版）', k:'ocr 识别 扫描 发票 桌面', tier:3, grp:'办公实用' },
+  { id:'clean', name:'大文件清理', desc:'扫描大文件进回收站（桌面版）', k:'清理 大文件 c盘 回收站 桌面', tier:3, grp:'办公实用' },
+  { id:'desk', name:'桌面设置', desc:'托盘、右键菜单、依赖检测、输出目录', k:'托盘 右键 设置 桌面 ffmpeg 检测 输出目录', tier:3, grp:'办公实用' }
 ];
 
 var ICONS = {
@@ -48,9 +49,46 @@ var ICONS = {
   qr:'▣', av:'🎬', offconv:'📑', ocr:'👁', clean:'🧹', desk:'⚙️'
 };
 
+/* 侧栏分组顺序：只影响排列，不影响功能 */
+var GRP_ORDER = ['数据与表格', '文件与整理', '格式转换', '办公实用'];
+
 function toolById(id){
   for (var i=0;i<TOOLS.length;i++) if (TOOLS[i].id === id) return TOOLS[i];
   return null;
+}
+
+/* 侧栏由 TOOLS 生成：加工具、删工具都不必再改 HTML
+   （以前是手写菜单，删掉工具后菜单里还留着点进去空白的老入口） */
+function buildSide(){
+  var nav = $('sideNav');
+  if (!nav) return;
+  var html = '<div class="grp-t">首页</div>' +
+    '<a class="nav" data-tool="home"><span class="ic">' + (ICONS.home || '🏠') + '</span>工具总览</a>';
+  GRP_ORDER.forEach(function(g){
+    var list = TOOLS.filter(function(t){ return t.grp === g; })
+                    .sort(function(a, b){ return a.tier - b.tier; });
+    if (!list.length) return;
+    html += '<div class="grp-t">' + g + '</div>';
+    list.forEach(function(t){
+      html += '<a class="nav" data-tool="' + t.id + '"><span class="ic">' +
+              (ICONS[t.id] || '·') + '</span>' + t.name + '</a>';
+    });
+  });
+  var box = document.createElement('div');
+  box.innerHTML = html;
+  var foot = nav.querySelector('.foot');
+  Array.prototype.slice.call(box.childNodes).forEach(function(n){
+    nav.insertBefore(n, foot);   // foot 为 null 时等价于追加到末尾
+  });
+  nav.querySelectorAll('a.nav').forEach(function(a){
+    a.addEventListener('click', function(){ go(a.getAttribute('data-tool')); });
+  });
+  /* 没归组的工具会从侧栏消失（首页还能搜到），这里明确提醒，避免以后又漏 */
+  var loose = TOOLS.filter(function(t){ return t.id !== 'home' && GRP_ORDER.indexOf(t.grp) < 0; });
+  if (loose.length){
+    notice('warn', '这些工具没归到侧栏分组，只能在首页找到：' +
+      loose.map(function(t){ return t.name; }).join('、'));
+  }
 }
 
 function toolCard(t, big){
@@ -150,9 +188,7 @@ function go(id){
   // 搜索时回首页则清空筛选提示状态，但保留输入
 }
 
-document.querySelectorAll('.side .nav').forEach(function(a){
-  a.addEventListener('click', function(){ go(a.getAttribute('data-tool')); });
-});
+buildSide();
 
 var search = $('homeSearch');
 if (search){
@@ -181,3 +217,4 @@ buildDash('');
   if(h && document.getElementById('tool-'+h)) go(h);
 })();
 })();
+

@@ -2,6 +2,7 @@
 'use strict';
 (function(){
 var U = TB.util;
+var C0 = TB.dataCore || {};   /* 纯函数核心：js/data-core.js */
 var $ = U.$, notice = U.notice, esc = U.esc;
 
 var ROW_H = 28;
@@ -184,32 +185,32 @@ function rebuildView(keepScroll){
   if (!keepScroll && scroller) scroller.scrollTop = 0;
 }
 
-/* ---------- 导入 ---------- */
-async function loadTextFile(file){
+/* 统一解析：CSV / TSV / TXT / XLSX → {name, headers, rows}
+ * 抽出来是为了让「多表合并」复用同一套解析逻辑，避免两处实现走偏。
+ * 顺带修掉原来的写法：xlsx 与 csv 两条分支在同一个函数作用域里
+ * 重复声明了 headers/body（var 提升导致能跑但很危险）。 */
+async function parseAnyFile(file){
   var name = file.name;
-  notice('info', '读取 ' + esc(name) + ' …');
   if (/\.(xlsx|xlsm|xls)$/i.test(name) && window.XLSX){
     var ab = await file.arrayBuffer();
     var wb = XLSX.read(ab, { type: 'array', dense: true });
     var sheet = wb.SheetNames[0];
-    var rows = XLSX.utils.sheet_to_json(wb.Sheets[sheet], { header: 1, raw: false, defval: '' });
-    if (!rows.length) throw new Error('空表');
-    var headers = rows[0].map(function(h, i){ return String(h || ('列' + (i+1))); });
-    var body = rows.slice(1).filter(function(r){
+    var xrows = XLSX.utils.sheet_to_json(wb.Sheets[sheet], { header: 1, raw: false, defval: '' });
+    if (!xrows.length) throw new Error('空表');
+    var xheaders = xrows[0].map(function(h2, i2){ return String(h2 || ('列' + (i2+1))); });
+    var xbody = xrows.slice(1).filter(function(r){
       return r.some(function(c){ return c !== '' && c != null; });
     }).map(function(r){
       var out = [];
-      for (var i = 0; i < headers.length; i++) out.push(r[i] == null ? '' : String(r[i]));
+      for (var i2 = 0; i2 < xheaders.length; i2++) out.push(r[i2] == null ? '' : String(r[i2]));
       return out;
     });
-    setDataset(name, headers, body);
-    return;
+    return { name: name, headers: xheaders, rows: xbody };
   }
+
   var text = await file.text();
-  // BOM
-  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
-  var delim = detectDelim(text);
-  var raw = parseCsvFast(text, delim);
+  if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1); // 去掉 BOM
+  var raw = parseCsvFast(text, detectDelim(text));
   if (!raw.length) throw new Error('空文件');
   var headers = raw[0].map(function(h, i){ return String(h || ('列' + (i+1))); });
   var body = raw.slice(1).filter(function(r){
@@ -219,8 +220,16 @@ async function loadTextFile(file){
     for (var i = 0; i < headers.length; i++) out.push(r[i] == null ? '' : r[i]);
     return out;
   });
-  setDataset(name, headers, body);
+  return { name: name, headers: headers, rows: body };
 }
+
+async function loadTextFile(file){
+  notice('info', '读取 ' + esc(file.name) + ' …');
+  var t = await parseAnyFile(file);
+  setDataset(t.name, t.headers, t.rows);   // setDataset 内部会重置清洗管线
+}
+
+
 
 function setDataset(name, headers, rows){
   DS.name = name;
@@ -237,12 +246,22 @@ function setDataset(name, headers, rows){
   renderVisible();
   notice('info', '已载入 ' + rows.length.toLocaleString('zh-CN') + ' 行');
   refreshColSelects();
-  $('dwCleanCol').disabled = false;
-  $('dwPvGroup').disabled = false;
-  $('dwPvGroup2').disabled = false;
-  $('dwPvVal').disabled = false;
-  $('dwCmpKey').disabled = false;
+
+  /* 换了一批数据，旧的清洗步骤与撤销记录按列名对不上了，一律清空更安全 */
+  PIPE.steps = [];
+  PIPE.undo = [];
+  renderPipe();
+  if ($('dwCleanOut')) $('dwCleanOut').innerHTML = '';
+
+  ['dwCleanCol','dwPvGroup','dwPvGroup2','dwPvVal','dwCmpKey'].forEach(function(id){
+    var el = $(id);
+    if (el) el.disabled = false;
+  });
+  /* 通知其它模块（数据批处理的多表合并 / 按列拆表）刷新自己的列下拉 */
+  document.dispatchEvent(new CustomEvent('tb:dataset'));
 }
+
+
 
 $('dwPick').onclick = function(){ $('dwFile').click(); };
 $('dwDrop').onclick = function(e){ if (e.target.tagName !== 'BUTTON') $('dwFile').click(); };
@@ -424,136 +443,140 @@ $('dwPvExport').onclick = function(){
   notice('info', '已导出 ' + pvRows.length + ' 组');
 };
 
-function applyClean(fn, label){
-  if (!DS.rows.length){ notice('warn', '请先载入数据'); return; }
-  var t0 = Date.now();
-  var changed = 0;
-  for (var i = 0; i < DS.rows.length; i++){
-    var r = DS.rows[i];
-    if (fn(r)) changed++;
-  }
-  rebuildView(true);
-  renderVisible();
-  notice('info', label + '，影响 ' + changed.toLocaleString('zh-CN') + ' 行（' + (Date.now()-t0) + 'ms）');
+/* ---------- 清洗管线：可加多步、先预览再执行、可撤销 ---------- */
+var PIPE = { steps: [], undo: [], header: [] };
+
+function syncCleanButtons(){
+  var has = PIPE.steps.length > 0;
+  $('dwCleanPrev').disabled = !has;
+  $('dwCleanApply').disabled = !has;
+  $('dwCleanReset').disabled = !has;
+  $('dwCleanUndo').disabled = !PIPE.undo.length;
 }
 
-$('dwCleanTrim').onclick = function(){
-  applyClean(function(r){
-    var ch = false;
-    for (var i = 0; i < r.length; i++){
-      if (typeof r[i] === 'string'){
-        var t = r[i].replace(/^\s+|\s+$/g, '').replace(/\s{2,}/g, ' ');
-        if (t !== r[i]){ r[i] = t; ch = true; }
-      }
-    }
-    return ch;
-  }, '已去首尾空格/压缩空白');
-};
-
-$('dwCleanDedupe').onclick = function(){
-  var seen = Object.create(null);
-  var out = [];
-  var removed = 0;
-  for (var i = 0; i < DS.rows.length; i++){
-    var k = DS.rows[i].join('\u0001');
-    if (seen[k]){ removed++; continue; }
-    seen[k] = 1;
-    out.push(DS.rows[i]);
+function renderPipe(){
+  var box = $('dwPipe');
+  if (!PIPE.steps.length){
+    box.innerHTML = '<span class="muted">还没有步骤。选好操作与列，点「＋ 添加步骤」。</span>';
+    syncCleanButtons();
+    return;
   }
-  DS.rows = out;
-  rebuildView(true);
-  renderVisible();
-  notice('info', '去重完成，删除 ' + removed.toLocaleString('zh-CN') + ' 行');
-};
-
-$('dwCleanDate').onclick = function(){
-  var ci = +$('dwCleanCol').value || 0;
-  applyClean(function(r){
-    var v = String(r[ci] || '');
-    // 2024/1/5, 2024.01.05, 20240105, 2024-1-5
-    var m = v.match(/(\d{4})[-/.年](\d{1,2})[-/.月](\d{1,2})/);
-    if (!m) m = v.match(/^(\d{4})(\d{2})(\d{2})$/);
-    if (m){
-      var y = m[1], mo = ('0'+m[2]).slice(-2), d = ('0'+m[3]).slice(-2);
-      var nv = y + '-' + mo + '-' + d;
-      if (nv !== v){ r[ci] = nv; return true; }
-    }
-    return false;
-  }, '日期已尽量规范为 YYYY-MM-DD');
-};
-
-$('dwCleanNum').onclick = function(){
-  var ci = +$('dwCleanCol').value || 0;
-  applyClean(function(r){
-    var v = String(r[ci] || '');
-    // ¥1,234.50 / 1234元
-    var m = v.replace(/[¥￥,，\s元]/g, '').replace(/[^\d.\-]/g, '');
-    if (m && m !== v){ r[ci] = m; return true; }
-    return false;
-  }, '金额已去符号/千分位');
-};
-
-$('dwCleanEmpty2dash').onclick = function(){
-  applyClean(function(r){
-    var ch = false;
-    for (var i = 0; i < r.length; i++){
-      if (r[i] === '' || r[i] == null){ r[i] = '—'; ch = true; }
-    }
-    return ch;
-  }, '空值已替换为 —');
-};
-
-$('dwCleanDropEmpty').onclick = function(){
-  var before = DS.rows.length;
-  DS.rows = DS.rows.filter(function(r){
-    return r.some(function(c){ return c !== '' && c != null && c !== '—'; });
+  var h = '';
+  PIPE.steps.forEach(function(s, i){
+    h += '<span class="chip">' + (i + 1) + '. ' + esc(C0.describeStep(s, DS.headers)) +
+         '<button class="x" data-i="' + i + '" title="删除这一步">×</button></span>';
   });
-  rebuildView(true);
-  renderVisible();
-  notice('info', '删除空行 ' + (before - DS.rows.length).toLocaleString('zh-CN') + ' 行');
-};
-
-$('dwSplit').onclick = function(){
-  var ci = +$('dwCleanCol').value || 0;
-  var sep = $('dwSplitSep').value || ',';
-  if (sep === '\\t') sep = '\t';
-  var newHeaders = [];
-  var maxN = 0;
-  // 预扫描
-  for (var i = 0; i < Math.min(DS.rows.length, 5000); i++){
-    var n = String(DS.rows[i][ci] || '').split(sep).length;
-    if (n > maxN) maxN = n;
-  }
-  if (maxN < 2){ notice('warn', '该列未检测到分隔符 ' + sep); return; }
-  for (var k = 0; k < maxN; k++) newHeaders.push(DS.headers[ci] + '_拆' + (k+1));
-  var outRows = DS.rows.map(function(r){
-    var parts = String(r[ci] || '').split(sep);
-    var nr = r.slice(0, ci).concat(parts).concat(r.slice(ci+1));
-    while (nr.length < DS.headers.length - 1 + maxN) nr.push('');
-    return nr;
+  box.innerHTML = h;
+  box.querySelectorAll('button.x').forEach(function(b){
+    b.onclick = function(){
+      PIPE.steps.splice(+b.dataset.i, 1);
+      renderPipe();
+      $('dwCleanOut').innerHTML = '';
+    };
   });
-  DS.headers = DS.headers.slice(0, ci).concat(newHeaders).concat(DS.headers.slice(ci+1));
-  DS.rows = outRows;
+  syncCleanButtons();
+}
+
+/* 操作下拉与参数字段都由 OPS 表驱动，避免两处手写对不上 */
+function refreshOpFields(){
+  var op = $('dwCleanOp').value;
+  var o = C0.OPS[op] || {};
+  $('dwCleanArgWrap').style.display = o.args > 0 ? '' : 'none';
+  $('dwCleanArg2Wrap').style.display = o.args > 1 ? '' : 'none';
+  if (o.args > 0) $('dwCleanArg').placeholder = o.arg1 || '参数';
+  if (o.arg2) $('dwCleanArg2').placeholder = o.arg2;
+  if (o.args > 0 && $('dwCleanArg').value === '' && o.defaultArg) $('dwCleanArg').value = o.defaultArg;
+  $('dwCleanColWrap').style.display = o.needsCol === false ? 'none' : '';
+  $('dwCleanOpHint').textContent = o.needsCol === false ? '这一步作用于整行，不需要选列' : '';
+}
+
+function initOpSelect(){
+  var sel = $('dwCleanOp');
+  sel.innerHTML = Object.keys(C0.OPS).map(function(k){
+    return '<option value="' + k + '">' + esc(C0.OPS[k].label) + '</option>';
+  }).join('');
+  sel.onchange = refreshOpFields;
+  refreshOpFields();
+}
+
+function addPipeStep(){
+  if (!DS.rows.length){ notice('warn', '请先载入数据'); return; }
+  var op = $('dwCleanOp').value;
+  var o = C0.OPS[op] || {};
+  var arg = $('dwCleanArg').value;
+  var arg2 = $('dwCleanArg2').value;
+  if (o.args > 0 && arg === ''){ notice('warn', '这一步需要填「' + (o.arg1 || '参数') + '」'); $('dwCleanArg').focus(); return; }
+  if (o.args > 1 && arg2 === ''){ notice('warn', '这一步需要填「' + (o.arg2 || '第二个参数') + '」'); $('dwCleanArg2').focus(); return; }
+  var ci = +$('dwCleanCol').value;
+  if (isNaN(ci)) ci = 0;
+  PIPE.steps.push({ op: op, col: ci, colName: DS.headers[ci], arg: arg, arg2: arg2 });
+  renderPipe();
+  $('dwCleanOut').innerHTML = '';
+}
+
+function previewPipe(){
+  if (!DS.rows.length){ notice('warn', '请先载入数据'); return; }
+  if (!PIPE.steps.length){ notice('warn', '还没有清洗步骤'); return; }
+  var r = C0.applyPipeline(DS.headers, DS.rows, PIPE.steps, 300);
+  var h = '<div style="margin-bottom:8px"><b>预览前 ' + r.rows.length.toLocaleString('zh-CN') + ' 行</b>（共 ' +
+          r.total.toLocaleString('zh-CN') + ' 行）。步骤生效后的表头：' +
+          esc(r.headers.join(' | ')) + '　<span class="muted">确认没问题再点「执行」</span></div>';
+  h += C0.tableHtml(r.headers, r.rows);
+  if (r.logs.length) h += '<div class="muted" style="margin-top:8px;color:#92400e">提示：<br>· ' + r.logs.map(esc).join('<br>· ') + '</div>';
+  $('dwCleanOut').innerHTML = h;
+}
+
+function applyPipe(){
+  if (!DS.rows.length){ notice('warn', '请先载入数据'); return; }
+  if (!PIPE.steps.length){ notice('warn', '还没有清洗步骤'); return; }
+  PIPE.undo.push({
+    name: DS.name,
+    headers: DS.headers.slice(),
+    rows: DS.rows.map(function(r){ return r.slice(); })
+  });
+  if (PIPE.undo.length > 3) PIPE.undo.shift();   // 最多回退 3 次，避免吃内存
+
+  var r = C0.applyPipeline(DS.headers, DS.rows, PIPE.steps);
+  DS.rows = r.rows;
+  DS.headers = r.headers;
+  DS.filters = {}; DS.search = ''; DS.sortCol = -1; DS.sortDir = 0;
+  $('dwSearch').value = '';
   rebuildView(false); renderHead(); renderVisible(); refreshColSelects();
-  notice('info', '已按 "' + sep + '" 拆出 ' + maxN + ' 列');
-};
+  $('dwCleanOut').innerHTML =
+    '<div style="color:#15803d"><b>✓ 已执行 ' + PIPE.steps.length + ' 步</b>，当前 ' +
+    r.total.toLocaleString('zh-CN') + ' 行 × ' + r.headers.length + ' 列。' +
+    '如需还原，点「撤销执行」。</div>' +
+    (r.logs.length ? '<div class="muted" style="margin-top:6px;color:#92400e">· ' + r.logs.map(esc).join('<br>· ') + '</div>' : '') +
+    '<div style="margin-top:10px">' + C0.tableHtml(r.headers, r.rows.slice(0, 10)) + '</div>';
+  notice('info', '清洗已执行');
+   syncCleanButtons();   /* 执行后「撤销执行」要立刻可用 */
+}
 
-$('dwMerge').onclick = function(){
-  var a = +$('dwCleanCol').value || 0;
-  var b = +$('dwCmpKey').value || 0;
-  if (a === b){ notice('warn', '请选择两列合并'); return; }
-  var sep = $('dwSplitSep').value === '\\t' ? '\t' : ($('dwSplitSep').value || ' ');
-  var lo = Math.min(a, b), hi = Math.max(a, b);
-  var newH = DS.headers[lo] + '+' + DS.headers[hi];
-  var outRows = DS.rows.map(function(r){
-    var parts = String(r[lo] || '') + sep + String(r[hi] || '');
-    return r.slice(0, lo).concat([parts]).concat(r.slice(lo+1, hi)).concat(r.slice(hi+1));
-  });
-  DS.headers = DS.headers.slice(0, lo).concat([newH]).concat(DS.headers.slice(lo+1, hi)).concat(DS.headers.slice(hi+1));
-  DS.rows = outRows;
+function undoPipe(){
+  if (!PIPE.undo.length){ notice('warn', '没有可撤销的操作'); return; }
+  var s = PIPE.undo.pop();
+  DS.name = s.name; DS.headers = s.headers; DS.rows = s.rows;
+  DS.filters = {}; DS.search = ''; DS.sortCol = -1; DS.sortDir = 0;
+  $('dwSearch').value = '';
   rebuildView(false); renderHead(); renderVisible(); refreshColSelects();
-  notice('info', '已合并两列');
+  $('dwCleanOut').innerHTML = '<div style="color:#15803d"><b>✓ 已撤销</b>，数据回到执行前（还可撤销 ' + PIPE.undo.length + ' 次）</div>';
+  notice('info', '已撤销上一步清洗');
+   syncCleanButtons();
+}
+
+$('dwCleanAdd').onclick = addPipeStep;
+$('dwCleanPrev').onclick = previewPipe;
+$('dwCleanApply').onclick = applyPipe;
+$('dwCleanReset').onclick = function(){
+  PIPE.steps = []; PIPE.undo = [];
+  renderPipe();
+  $('dwCleanOut').innerHTML = '';
 };
+$('dwCleanUndo').onclick = undoPipe;
+
+initOpSelect();
+renderPipe();
+
 
 /* ---------- 导出当前视图 ---------- */
 function exportRows(headers, rows, basename){
@@ -586,7 +609,9 @@ $('dwExportXlsx').onclick = async function(){
   }
 };
 
-/* ---------- 双表比对 ---------- */
+/* ---------- 双表比对（对账）：A 表＝工作台当前数据，B 表＝拖入的比对表 ---------- */
+var CMP = { name: '', headers: [], rows: [], result: null };
+
 $('dwCmpPick').onclick = function(){ $('dwCmpFile').click(); };
 $('dwCmpDrop').onclick = function(e){ if (e.target.tagName !== 'BUTTON') $('dwCmpFile').click(); };
 $('dwCmpDrop').addEventListener('dragover', function(e){ e.preventDefault(); this.classList.add('over'); });
@@ -604,163 +629,156 @@ $('dwCmpFile').onchange = function(){
 
 async function loadCompare(file){
   try{
-    var name = file.name, headers, body;
-    if (/\.(xlsx|xlsm|xls)$/i.test(name) && window.XLSX){
-      var ab = await file.arrayBuffer();
-      var wb = XLSX.read(ab, { type: 'array' });
-      var rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header: 1, raw: false, defval: '' });
-      headers = (rows[0] || []).map(function(h, i){ return String(h || ('列'+(i+1))); });
-      body = rows.slice(1).map(function(r){
-        var o = [];
-        for (var i = 0; i < headers.length; i++) o.push(r[i] == null ? '' : String(r[i]));
-        return o;
-      });
-    } else {
-      var text = await file.text();
-      if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
-      var raw = parseCsvFast(text, detectDelim(text));
-      headers = (raw[0] || []).map(function(h, i){ return String(h || ('列'+(i+1))); });
-      body = raw.slice(1).map(function(r){
-        var o = [];
-        for (var i = 0; i < headers.length; i++) o.push(r[i] == null ? '' : r[i]);
-        return o;
-      });
+    var t = await parseAnyFile(file);
+    CMP.name = t.name; CMP.headers = t.headers; CMP.rows = t.rows;
+    CMP.result = null;
+    $('dwCmpName').textContent = t.name + ' · ' + t.rows.length.toLocaleString('zh-CN') + ' 行 × ' + t.headers.length + ' 列';
+    $('dwCmpKey2').innerHTML = t.headers.map(function(h, i){
+      return '<option value="' + i + '">' + esc(h) + '</option>';
+    }).join('');
+    /* 猜一个匹配列：优先挑与 A 表同名的列，省得用户自己找 */
+    var guess = -1;
+    for (var i = 0; i < t.headers.length; i++){
+      if (DS.headers.indexOf(t.headers[i]) >= 0){ guess = i; break; }
     }
-    DS.compare = { name: name, headers: headers, rows: body };
-    $('dwCmpName').textContent = name + ' · ' + body.length.toLocaleString('zh-CN') + ' 行';
-    // 对齐 key 下拉：用两边同名列
-    refreshCmpKeys();
-    notice('info', '比对表已载入');
+    if (guess >= 0) $('dwCmpKey2').value = String(guess);
+    $('dwCmpKey2').disabled = false;
+    $('dwCmpDiffOnly').disabled = true;
+    $('dwCmpExport').disabled = true;
+    $('dwCmpStat').textContent = '';
+    $('dwCmpOut').innerHTML = '';
+    notice('info', '比对表已载入，选好两边的匹配列后点「开始比对」');
   }catch(e){
     notice('err', '载入比对表失败：' + esc(e.message||e));
   }
 }
 
-function refreshCmpKeys(){
-  var sel = $('dwCmpKeyMain');
-  if (!sel) return;
-  var aHeaders = DS.headers;
-  var bHeaders = DS.compare ? DS.compare.headers : [];
-  var common = [];
-  aHeaders.forEach(function(h, i){
-    if (bHeaders.indexOf(h) >= 0) common.push({ h: h, i: i });
-  });
-  if (!common.length){
-    common = aHeaders.map(function(h, i){ return { h: h, i: i }; });
-  }
-  var cur = sel.value;
-  sel.innerHTML = common.map(function(c){
-    return '<option value="' + c.i + '">' + esc(c.h) + (bHeaders.indexOf(c.h)>=0 ? '' : '（仅主表）') + '</option>';
-  }).join('');
-  if (cur !== '' && +cur < aHeaders.length) sel.value = cur;
-  $('dwCmpMode').disabled = false;
+function cmpOptions(){
+  return {
+    fuzzy: $('dwCmpFuzzy').checked,
+    threshold: (+$('dwCmpThresh').value || 80) / 100,
+    ignoreCase: $('dwCmpCase').checked,
+    normalize: $('dwCmpNorm').checked,
+  };
 }
 
-$('dwCmpRun').onclick = function(){
-  if (!DS.rows.length){ notice('warn', '请先载入主表'); return; }
-  if (!DS.compare || !DS.compare.rows.length){ notice('warn', '请先载入比对表'); return; }
-  var mode = $('dwCmpMode').value;
-  var keyMain = +$('dwCmpKeyMain').value || 0;
-  var keyName = DS.headers[keyMain];
-  var keyOther = DS.compare.headers.indexOf(keyName);
-  if (keyOther < 0) keyOther = +($('dwCmpKey').value) || 0;
+function runCompare(){
+  if (!DS.rows.length){ notice('warn', '请先载入主表（数据源）'); return; }
+  if (!CMP.rows.length){ notice('warn', '请先载入要比对的表'); return; }
+  var k1 = +$('dwCmpKey').value, k2 = +$('dwCmpKey2').value;
+  if (isNaN(k1) || isNaN(k2)){ notice('warn', '请选择两张表的匹配列'); return; }
+  var opt = cmpOptions();
+
+  /* 参与比较的列 = 两表表头的并集，去掉各自的匹配列 */
+  var seen = {}, cmpCols = [];
+  DS.headers.forEach(function(h, i){
+    if (i !== k1 && !seen[h]){ seen[h] = 1; cmpCols.push({ name: h, idx1: i, idx2: CMP.headers.indexOf(h) }); }
+  });
+  CMP.headers.forEach(function(h, i){
+    if (i !== k2 && !seen[h]){ seen[h] = 1; cmpCols.push({ name: h, idx1: DS.headers.indexOf(h), idx2: i }); }
+  });
+  var missing = cmpCols.filter(function(c){ return c.idx1 < 0 || c.idx2 < 0; })
+                       .map(function(c){ return c.name + '（只有' + (c.idx1 < 0 ? '比对表' : '主表') + '有）'; });
+
+  /* B 表按匹配值建索引；同一个匹配值出现多次时按先后顺序取用 */
+  var byKey = {};
+  CMP.rows.forEach(function(r){
+    var k = C0.cmpKey(String(r[k2] == null ? '' : r[k2]), opt);
+    if (k === '') return;
+    (byKey[k] = byKey[k] || []).push(r);
+  });
 
   var t0 = Date.now();
-  var mapB = Object.create(null);
-  var dupB = Object.create(null);
-  for (var i = 0; i < DS.compare.rows.length; i++){
-    var k = String(DS.compare.rows[i][keyOther] == null ? '' : DS.compare.rows[i][keyOther]).trim();
-    if (!k) continue;
-    if (mapB[k]) dupB[k] = 1;
-    mapB[k] = DS.compare.rows[i];
-  }
-  var onlyA = [], onlyB = [], both = [], diffVal = [];
-  var mapA = Object.create(null);
-  var matchCols = Math.min(DS.headers.length, DS.compare.headers.length);
+  var diff = 0, same = 0, only1 = 0, only2 = 0, fuzz = 0;
+  var out = [];
 
-  for (var i = 0; i < DS.rows.length; i++){
-    var r = DS.rows[i];
-    var k = String(r[keyMain] == null ? '' : r[keyMain]).trim();
-    mapA[k] = r;
-    var b = mapB[k];
-    if (!b){ onlyA.push(r); continue; }
-    both.push(r);
-    // 值差异：按同名列比
-    var diffs = [];
-    for (var c = 0; c < DS.headers.length; c++){
-      var bh = DS.compare.headers.indexOf(DS.headers[c]);
-      if (bh < 0) continue;
-      var va = String(r[c] == null ? '' : r[c]).trim();
-      var vb = String(b[bh] == null ? '' : b[bh]).trim();
-      if (va !== vb) diffs.push(DS.headers[c] + ': ' + va + ' ≠ ' + vb);
+  DS.rows.forEach(function(r){
+    var raw = String(r[k1] == null ? '' : r[k1]);
+    var k = C0.cmpKey(raw, opt);
+    var partner = null;
+    if (byKey[k] && byKey[k].length){ partner = byKey[k].shift(); }
+    else if (opt.fuzzy && raw !== ''){
+      var keys = Object.keys(byKey), best = null;
+      for (var i = 0; i < keys.length; i++){
+        if (!byKey[keys[i]].length) continue;
+        var sc = C0.similarity(raw, keys[i]);
+        if (!best || sc > best.score) best = { key: keys[i], score: sc };
+      }
+      if (best && best.score >= opt.threshold){ partner = byKey[best.key].shift(); fuzz++; }
     }
-    if (diffs.length) diffVal.push({ row: r, diffs: diffs });
-  }
-  for (var i = 0; i < DS.compare.rows.length; i++){
-    var k = String(DS.compare.rows[i][keyOther] == null ? '' : DS.compare.rows[i][keyOther]).trim();
-    if (k && !mapA[k]) onlyB.push(DS.compare.rows[i]);
-  }
+    if (!partner){ only1++; out.push([raw, '主表独有', '比对表里找不到这一项']); return; }
 
-  var dupCount = Object.keys(dupB).length;
-  $('dwCmpResult').innerHTML =
-    '<div class="row" style="gap:16px;flex-wrap:wrap">' +
-    '  <div><b>双方都有</b>：' + both.length.toLocaleString('zh-CN') + '</div>' +
-    '  <div style="color:var(--warn)"><b>仅主表有</b>：' + onlyA.length.toLocaleString('zh-CN') + '</div>' +
-    '  <div style="color:var(--err)"><b>仅比对表有</b>：' + onlyB.length.toLocaleString('zh-CN') + '</div>' +
-    '  <div><b>键重复(比对表)</b>：' + dupCount.toLocaleString('zh-CN') + '</div>' +
-    '  <div><b>字段不一致</b>：' + diffVal.length.toLocaleString('zh-CN') + '</div>' +
-    '  <span class="muted">用时 ' + (Date.now()-t0) + 'ms · 键：' + esc(keyName) + '</span>' +
-    '</div>';
-
-  window.__dwCmpOut = { onlyA: onlyA, onlyB: onlyB, both: both, diffVal: diffVal, keyName: keyName, keyOther: keyOther };
-  notice('info', '比对完成：仅主表 ' + onlyA.length + ' · 仅比对表 ' + onlyB.length + ' · 字段差异 ' + diffVal.length);
-
-  if (mode === 'showA'){
-    // 只在主表里显示仅主表有的
-    var set = Object.create(null);
-    onlyA.forEach(function(r){ set[String(r[keyMain]).trim()] = 1; });
-    DS.filters = {}; DS.search = '';
-    // 用 view 过滤
-    DS.view = [];
-    for (var i = 0; i < DS.rows.length; i++){
-      var k = String(DS.rows[i][keyMain] == null ? '' : DS.rows[i][keyMain]).trim();
-      if (set[k]) DS.view.push(i);
-    }
-    renderVisible();
-  } else if (mode === 'showDiff'){
-    var set2 = Object.create(null);
-    diffVal.forEach(function(d){ set2[String(d.row[keyMain]).trim()] = 1; });
-    DS.view = [];
-    for (var i = 0; i < DS.rows.length; i++){
-      var k = String(DS.rows[i][keyMain] == null ? '' : DS.rows[i][keyMain]).trim();
-      if (set2[k]) DS.view.push(i);
-    }
-    renderVisible();
-  } else {
-    rebuildView(true);
-    renderVisible();
-  }
-};
-
-$('dwCmpExpOnlyA').onclick = function(){
-  var o = window.__dwCmpOut;
-  if (!o){ notice('warn', '请先比对'); return; }
-  exportRows(DS.headers, o.onlyA, '仅主表有_' + (o.onlyA.length));
-};
-$('dwCmpExpOnlyB').onclick = function(){
-  var o = window.__dwCmpOut;
-  if (!o){ notice('warn', '请先比对'); return; }
-  exportRows(DS.compare.headers, o.onlyB, '仅比对表有_' + (o.onlyB.length));
-};
-$('dwCmpExpDiff').onclick = function(){
-  var o = window.__dwCmpOut;
-  if (!o){ notice('warn', '请先比对'); return; }
-  var rows = o.diffVal.map(function(d){
-    return d.row.concat([d.diffs.join(' | ')]);
+    var changed = [];
+    cmpCols.forEach(function(cc){
+      if (cc.idx1 < 0 || cc.idx2 < 0) return;   // 缺列不当作差异，已在提示里说明
+      var a = String(r[cc.idx1] == null ? '' : r[cc.idx1]);
+      var b = String(partner[cc.idx2] == null ? '' : partner[cc.idx2]);
+      if (C0.cmpEq(a, b, opt)) return;
+      changed.push(cc.name + '：' + (a === '' ? '(空)' : a) + ' → ' + (b === '' ? '(空)' : b));
+    });
+    if (changed.length){ diff++; out.push([raw, '有差异', changed.join('；')]); }
+    else { same++; out.push([raw, '一致', '']); }
   });
-  var headers = DS.headers.concat(['差异说明']);
-  exportRows(headers, rows, '字段不一致_' + rows.length);
+
+  Object.keys(byKey).forEach(function(k){
+    byKey[k].forEach(function(r){
+      only2++;
+      out.push([String(r[k2] == null ? '' : r[k2]), '比对表独有', '主表里找不到这一项']);
+    });
+  });
+
+  CMP.result = { rows: out };
+  $('dwCmpStat').innerHTML =
+    '一致 <b style="color:#15803d">' + same + '</b>　' +
+    '有差异 <b style="color:#b45309">' + diff + '</b>　' +
+    '主表独有 <b>' + only1 + '</b>　' +
+    '比对表独有 <b>' + only2 + '</b>　' +
+    '<span class="muted">用时 ' + (Date.now() - t0) + 'ms</span>' +
+    (fuzz ? '　<span class="muted">（其中 ' + fuzz + ' 条靠模糊匹配对上）</span>' : '') +
+    (missing.length ? '<div class="muted" style="margin-top:4px">未参与比较：' + esc(missing.join('、')) + '</div>' : '');
+  if (!opt.fuzzy && only1) {
+    /* 提示：名称写法有差异时开模糊匹配能救回来 */
+    $('dwCmpStat').innerHTML += '<div class="muted" style="margin-top:4px">如果两边名称只是写法不同（全角/括号/「有限公司」），勾选「模糊匹配」再比一次。</div>';
+  }
+
+  renderCmpRows();
+  $('dwCmpExport').disabled = false;
+  $('dwCmpDiffOnly').disabled = (diff + only1 + only2) === 0;
+}
+
+function renderCmpRows(){
+  if (!CMP.result){ $('dwCmpOut').innerHTML = ''; return; }
+  var rows = CMP.result.rows;
+  if ($('dwCmpDiffOnly').checked){
+    rows = rows.filter(function(r){ return r[1] !== '一致'; });
+  }
+  if (!rows.length){
+    $('dwCmpOut').innerHTML = '<div style="color:#15803d;padding:6px 0">✓ 两张表完全一致</div>';
+    return;
+  }
+  var h = '<div class="rtable" style="max-height:380px;overflow:auto"><table><thead><tr>' +
+          '<th>匹配值</th><th>情况</th><th>差异明细</th></tr></thead><tbody>';
+  var show = Math.min(rows.length, 500);
+  for (var i = 0; i < show; i++){
+    var r = rows[i];
+    h += '<tr class="' + (r[1] === '有差异' ? 'warn' : (r[1] === '一致' ? '' : 'diff')) + '">' +
+         '<td class="mono">' + esc(r[0]) + '</td><td>' + esc(r[1]) +
+         '</td><td class="mono">' + esc(r[2] || '') + '</td></tr>';
+  }
+  h += '</tbody></table></div>';
+  if (rows.length > show) h += '<div class="muted" style="margin-top:6px">仅列出前 ' + show + ' 行，共 ' + rows.length.toLocaleString('zh-CN') + ' 行</div>';
+  $('dwCmpOut').innerHTML = h;
+}
+
+$('dwCmpFuzzy').onchange = function(){ $('dwCmpThreshRow').style.display = this.checked ? '' : 'none'; };
+$('dwCmpThresh').oninput = function(){ $('dwCmpThreshVal').textContent = this.value + '%'; };
+$('dwCmpDiffOnly').onchange = renderCmpRows;
+$('dwCmpRun').onclick = runCompare;
+$('dwCmpExport').onclick = function(){
+  if (!CMP.result){ notice('warn', '请先比对'); return; }
+  exportRows(['匹配值', '情况', '差异明细'], CMP.result.rows, '对账结果');
 };
+
 
 /* 初始化 */
 ensureDom();
@@ -779,4 +797,12 @@ DS.headers = ['（请载入 CSV / XLSX，或点「生成 10 万行演示」）']
 DS.rows = [];
 DS.view = [];
 renderHead();
+/* ---------- 对外接口：供 js/data-batch.js（多表合并 / 按列拆表）复用 ---------- */
+TB.datawork = {
+  getDS: function(){ return DS; },
+  setDataset: setDataset,
+  parseAnyFile: parseAnyFile,
+  exportRows: exportRows,
+};
+
 })();

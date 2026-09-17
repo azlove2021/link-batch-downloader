@@ -192,7 +192,13 @@ for (let i = 0; i < ordered.length; i++) {
 }
 
 /* 明确的依赖关系 */
-const ORDER_PAIRS = [['js/rename-core.js', 'js/rename.js']];
+const ORDER_PAIRS = [
+  ['js/rename-core.js', 'js/rename.js'],
+  /* 数据工作台：纯函数核心要先于使用它的两个文件加载（顺序错了功能会静默失效） */
+  ['js/data-core.js', 'js/datawork.js'],
+  ['js/data-core.js', 'js/data-batch.js'],
+  ['js/datawork.js', 'js/data-batch.js'],
+];
 for (const [before, after] of ORDER_PAIRS) {
   if (idxOf(before) < 0 || idxOf(after) < 0) continue;
   check(idxOf(before) < idxOf(after),
@@ -210,6 +216,47 @@ for (const f of runtimeJs) {
     failures.push(`js/${f} 语法错误：${e.message}`);
   }
 }
+
+
+/* ---------- 11. 侧栏菜单必须由注册表生成 ----------
+ * 侧栏以前是手写 HTML：删掉工具后菜单里还留着「点进去一片空白」的老入口。
+ * 现在由 app.js 的 buildSide() 依据 TOOLS 生成，这里守住三件事：
+ *   ① 每个工具都归了组；② 组名都在 GRP_ORDER 里；③ 每个组下面至少有工具。 */
+const grpMatch = appJs.match(/var GRP_ORDER = \[([^\]]*)\]/);
+check(!!grpMatch, 'js/app.js：找不到 GRP_ORDER（侧栏分组定义被删了？）');
+const grpOrder = grpMatch ? [...grpMatch[1].matchAll(/'([^']+)'/g)].map((m) => m[1]) : [];
+check(grpOrder.length >= 3, `侧栏分组只剩 ${grpOrder.length} 个，看起来少了`);
+
+const toolEntries = [];
+if (toolsMatch) {
+  for (const m of toolsMatch[1].matchAll(/\{([^{}]*?id:\s*'[^']+'[^{}]*?)\}/g)) {
+    const id = (m[1].match(/id:\s*'([^']+)'/) || [])[1];
+    const grp = (m[1].match(/grp:\s*'([^']*)'/) || [])[1];
+    if (id) toolEntries.push({ id, grp: grp === undefined ? null : grp });
+  }
+}
+check(toolEntries.length === toolIds.length, 'js/app.js：TOOLS 条目解析不全（对象写法变了？测试需同步）');
+
+for (const t of toolEntries) {
+  if (t.id === 'home') continue;   // 首页链接由 buildSide 单独生成
+  check(t.grp !== null && t.grp !== '', `工具「${t.id}」没写 grp，侧栏里会看不到它`);
+  check(grpOrder.includes(t.grp), `工具「${t.id}」的 grp「${t.grp}」不在 GRP_ORDER 里`);
+}
+for (const g of grpOrder) {
+  check(toolEntries.some((t) => t.grp === g), `侧栏分组「${g}」下面一个工具都没有（空组）`);
+}
+check(/function buildSide\(\)/.test(appJs), 'js/app.js：找不到 buildSide()（侧栏生成器被删了？）');
+
+/* ---------- 12. index.html 不允许再写死侧栏链接 ---------- */
+const navBlock = html.match(/<nav class="side"[\s\S]*?<\/nav>/);
+check(!!navBlock, 'index.html：找不到侧栏 <nav class="side">');
+if (navBlock) {
+  const hardcoded = [...navBlock[0].matchAll(/data-tool="([^"]+)"/g)].map((m) => m[1]);
+  check(hardcoded.length === 0,
+    `index.html 侧栏里还写死了 ${hardcoded.length} 个菜单项（应交给 app.js 生成）：${hardcoded.slice(0, 6).join('、')}`);
+  check(/class="foot"/.test(navBlock[0]), 'index.html：侧栏底部的说明文字（.foot）不见了');
+}
+
 
 /* ---------- 输出 ---------- */
 console.log('');
