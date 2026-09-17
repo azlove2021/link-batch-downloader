@@ -121,32 +121,36 @@ Project_010_链接批量下载器/
 ├── index.html          # 入口（双击打开）
 ├── css/style.css
 ├── js/
-│   ├── core.js         # 通知 / 哈希 / XLSX / ZIP 等公共库
-│   ├── download.js     # 批量下载
-│   ├── hash.js         # 哈希校验
-│   ├── text.js         # 文本处理
-│   ├── json.js         # JSON
-│   ├── encode.js       # 编码
-│   ├── regexdiff.js    # 正则 + Diff
-│   ├── convert.js      # 表格互转
-│   ├── image.js        # 图片
-│   ├── invoice.js      # 发票提取
-│   ├── qrcode.js       # 二维码
-│   ├── extras.js       # 时间戳 / 密码
-│   ├── imgedit.js      # 裁剪 / 拼接
-│   ├── pdf.js          # PDF 工具
-│   ├── markdown.js     # Markdown 编辑器
-│   ├── office.js       # JWT / 文本统计 / 房贷利息
-│   ├── aescrypto.js    # AES / HMAC
-│   ├── rename.js       # 批量重命名
-│   ├── extra-tools.js  # 加密PDF/哈希对比/颜色/SQL
-│   ├── outdir.js       # 统一输出目录
-│   ├── vendor/         # 本地第三方（pdf-lib、markdown-it）
-│   └── app.js          # 导航与首页搜索
-├── scripts/sync-web.cjs  # 同步网页资源到 web/（Tauri 用）
+│   ├── core.js          # 公共库：通知 / 哈希 / 手写 XLSX·ZIP / vendor 按需加载
+│   ├── app.js           # 工具注册表、侧栏导航、首页搜索
+│   ├── data-core.js     # 数据工作台纯函数核心（合并/拆表/清洗流水线/对账）
+│   ├── datawork.js      # 数据工作台界面
+│   ├── data-batch.js    # 多表合并 / 按列拆表 批量入口
+│   ├── convert.js       # 表格互转
+│   ├── text-core.js     # 文本处理纯函数核心（脱敏 / 粘贴清洗）
+│   ├── text.js          # 文本处理
+│   ├── diff.js          # 文本对比
+│   ├── rename-core.js   # 批量重命名纯函数核心（日期识别 / 模板）
+│   ├── rename.js        # 批量重命名
+│   ├── folderorg.js     # 文件夹归类
+│   ├── download-core.js # 批量下载纯函数核心（请求头解析 / 失败清单）
+│   ├── download.js      # 批量下载
+│   ├── hash.js          # 哈希校验（含哈希对比）
+│   ├── image.js         # 图片工具（转换 / 压缩 / 压到指定 KB）
+│   ├── imgedit.js       # 图片裁剪 / 长图拼接（已并入图片工具面板）
+│   ├── pdf.js           # PDF 工具（含加打开密码）
+│   ├── invoice-core.js  # 发票纯函数核心（重复检测 / 台账比对）
+│   ├── invoice.js       # 发票提取
+│   ├── qrcode.js        # 二维码生成
+│   ├── outdir.js        # 统一输出目录
+│   ├── desktop.js       # 桌面版专属（FFmpeg / LibreOffice / OCR / 清理 / 托盘）
+│   └── vendor/          # 本地第三方：pdf-lib、xlsx（均按需加载，不占首屏）
+├── scripts/              # sync-web / bump-version / bench-data（性能基准）等维护脚本
+├── tests/                # 纯函数核心单测 + 全仓库一致性校验（npm test，724 项）
 ├── src-tauri/            # Tauri 桌面壳（打包 exe）
 ├── package.json
 ├── BUILD_TAURI.md
+├── 改进建议.md            # 改进路线图（四批进度与决策记录）
 ├── dist/                 # 本地生成的安装包（gitignore）
 ├── 链接批量下载器.html  # 升级引导页（自动跳转 index.html，可删）
 ├── README.md
