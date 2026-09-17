@@ -58,7 +58,7 @@
 ### 文件与整理
 | 工具 | 说明 |
 |---|---|
-| **批量下载** | 扫描文件夹里所有 txt 的下载链接，按文件名自动分目录；**预检链接**（下载前标出废链）、**自定义请求头/登录 Cookie**、断点续传、并发、SHA-256、**重跑失败项/导出失败清单**、导出 TXT/Excel |
+| **批量下载** | 扫描文件夹里所有 txt 的下载链接，按文件名自动分目录；**预检链接**（下载前标出废链）、**自定义请求头/登录 Cookie**、断点续传、并发、SHA-256、**重跑失败项/导出失败清单**、导出 TXT/Excel；桌面版可勾**「原生下载通道」**——Rust/reqwest 下载，Cookie/Referer/UA 等浏览器禁止头原样发送、不受跨域限制 |
 | **批量重命名** | 日期提取重排/替换/前后缀/编号，规则先预览、**可撤销 5 步**、改名记录导出 CSV |
 | **文件夹归类** | 按扩展名 / 修改年月 / 关键字 / 大小档自动归子文件夹，先预览再执行；**可撤销上次归类**、导出归类记录 CSV |
 | **哈希校验** | 本地文件/文件夹 SHA-256 / MD5，可写 `_checksums.sha256.txt`；内置**哈希对比**（两段哈希或两个文件） |
@@ -150,7 +150,7 @@ Project_010_链接批量下载器/
 │   ├── desktop.js       # 桌面版专属（FFmpeg / LibreOffice / OCR / 清理 / 托盘）
 │   └── vendor/          # 本地第三方：pdf-lib、xlsx（均按需加载，不占首屏）
 ├── scripts/              # sync-web / bump-version / bench-data（性能基准）等维护脚本
-├── tests/                # 纯函数核心单测 + 全仓库一致性校验（npm test，813 项）
+├── tests/                # 纯函数核心单测 + 全仓库一致性校验（npm test，820 项）
 ├── src-tauri/            # Tauri 桌面壳（打包 exe）
 ├── package.json
 ├── BUILD_TAURI.md
@@ -171,13 +171,13 @@ Project_010_链接批量下载器/
 |---|---|
 | 语言 | 原生 HTML + CSS + JS，**零构建**；库文件本地 vendor，无外网 CDN |
 | 文件读写 | File System Access API（下载/哈希/文件夹选图） |
-| 下载 | `fetch` + `ReadableStream` 流式落盘 + Range 续传 |
+| 下载 | `fetch` + `ReadableStream` 流式落盘 + Range 续传；桌面版可切 Rust/reqwest 原生通道（请求头无浏览器限制） |
 | Excel / ZIP | 浏览器 `CompressionStream` 手写 OOXML / ZIP |
 | 二维码 | 内置精简 QR 编码器（byte 模式，纠错 L/M/Q/H） |
 | PDF 编辑 | [pdf-lib](https://github.com/Hopding/pdf-lib)（本地 vendor） |
 | PDF 文字 | 内置轻量解析（FlateDecode + ToUnicode），电子发票文字层可用；扫描件桌面版内置系统 OCR |
 | 额外依赖 | `js/vendor/` 下 **2** 个库：pdf-lib（512KB）、xlsx（861KB）。**按需动态加载**（工具首次使用时注入，首屏约 349KB），全部本地化，仍可完全离线双击使用 |
-| 质量保障 | `npm test`：纯函数核心单元测试 + 全仓库一致性校验（813 项）；`npm run bench`：10 万行数据链路可复现性能基准 |
+| 质量保障 | `npm test`：纯函数核心单元测试 + 全仓库一致性校验（820 项）；`npm run bench`：10 万行数据链路可复现性能基准 |
 
 ---
 
