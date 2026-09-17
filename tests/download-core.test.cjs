@@ -45,6 +45,9 @@ const fb = DC.parseHeaders('Referer: https://x.com\nUser-Agent: curl\nSec-Fetch-
 eq(fb.forbidden.map((f) => f.name), ['Referer', 'User-Agent', 'Sec-Fetch-Mode', 'Proxy-A'],
    'Referer / UA / sec-* / proxy-* 全拦截');
 eq(fb.headers, { 'Accept': '*/*' }, '合法头保留');
+eq(fb.raw, { 'Referer': 'https://x.com', 'User-Agent': 'curl', 'Sec-Fetch-Mode': 'cors', 'Proxy-A': '1', 'Accept': '*/*' },
+   'raw 收录全部头（含禁止头，原生下载通道用）');
+eq(DC.parseHeaders('A: 1').raw, { A: '1' }, 'raw 与 headers 对合法头一致');
 
 /* ---------------------------------------------------------------- 失败清单 */
 eq(DC.failListTxt([{ title: '报告 一', url: 'https://a/1.pdf' }, { url: 'https://a/2' }]),

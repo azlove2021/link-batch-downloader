@@ -24,6 +24,7 @@
    *   cookieWanted —— 用户写了 Cookie:，想带 cookie（UI 应改用 credentials 模式） */
   function parseHeaders(text) {
     var headers = {}, forbidden = [], cookieWanted = false;
+    var raw = {};   /* 全部头（含浏览器禁止的）—— 桌面「原生下载通道」(Rust) 用，它没有浏览器限制 */
     String(text == null ? '' : text).split(/\r?\n/).forEach(function (line) {
       line = line.trim();
       if (!line || line.charAt(0) === '#' || line.slice(0, 2) === '//') return;
@@ -33,6 +34,7 @@
       var value = line.slice(i + 1).trim();
       if (!name || !value) return;
       var lower = name.toLowerCase();
+      raw[name] = value;
       if (lower === 'cookie' || lower === 'cookie2') {
         cookieWanted = true;
         forbidden.push({ name: name, value: value });
@@ -44,7 +46,7 @@
       }
       headers[name] = value;
     });
-    return { headers: headers, forbidden: forbidden, cookieWanted: cookieWanted };
+    return { headers: headers, raw: raw, forbidden: forbidden, cookieWanted: cookieWanted };
   }
 
   /* 失败任务 → txt：标题<TAB>链接，一行一条。

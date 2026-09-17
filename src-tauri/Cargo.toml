@@ -23,6 +23,10 @@ tauri-plugin-dialog = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 dirs = "6"
+# 原生下载通道：reqwest 流式下载（可发浏览器禁止头、不受 CORS 限制）
+reqwest = { version = "0.12", features = ["stream"] }
+futures-util = "0.3"
+sha2 = "0.10"
 
 [profile.release]
 codegen-units = 1

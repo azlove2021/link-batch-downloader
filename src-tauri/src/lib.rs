@@ -28,6 +28,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
+        .manage(commands::DlCancel::default())
         .setup(move |app| {
             // 系统托盘
             let show = MenuItem::with_id(app, "show", "打开主窗口", true, None::<&str>)?;
@@ -93,6 +94,11 @@ pub fn run() {
             commands::register_context_menu,
             commands::unregister_context_menu,
             commands::reveal_in_explorer,
+            commands::http_download,
+            commands::http_cancel,
+            commands::file_size,
+            commands::sha256_file,
+            commands::save_text,
         ])
         .run(ctx)
         .expect("error while running tauri application");

@@ -29,9 +29,14 @@ function fetchOpts(extraHeaders, signal){
 function warnForbiddenHeaders(){
   var info = customHeaderInfo();
   if(!info.forbidden.length) return;
+  if(S.nativeMode){
+    notice('info','原生下载通道：' + esc(info.forbidden.map(function(f){ return f.name; }).join('、')) + ' 等头会原样发送（Rust 端无浏览器限制）。');
+    return;
+  }
   notice('warn','这些请求头被浏览器禁止、已忽略：<b>' +
     esc(info.forbidden.map(function(f){ return f.name; }).join('、')) + '</b>' +
-    (info.cookieWanted ? '（Cookie 已自动转为「携带登录 Cookie」模式：发送浏览器里该站点已有的 cookie）' : ''));
+    (info.cookieWanted ? '（Cookie 已自动转为「携带登录 Cookie」模式：发送浏览器里该站点已有的 cookie）' : '') +
+    '。桌面版可勾「原生下载通道」让禁止头真正生效。');
 }
 
 var MIME_EXT = {
@@ -115,7 +120,8 @@ var S = {
   rootHandle:null, rootPath:'',
   outHandle:null, outPath:'', outIsDefault:true,
   groups:[], running:false, paused:false, abort:null, stopAll:false,
-  bytes:0, startedAt:0, lastBytes:0, lastTs:0, speed:0
+  bytes:0, startedAt:0, lastBytes:0, lastTs:0, speed:0,
+  nativeMode:false, nativeOut:''   /* 桌面原生下载通道（Rust）：输出用真实路径 */
 };
 var TASKS = [];
 window.TASKS = TASKS;
@@ -500,6 +506,7 @@ async function ensureOutDir(g){
 }
 
 async function downloadTask(t){
+  if(S.nativeMode) return downloadTaskNative(t);
   var g = t.group;
   var outDir = await ensureOutDir(g);
   var dupMode = $('optDup').value;
@@ -614,6 +621,78 @@ async function downloadTask(t){
   return 'ok';
 }
 
+/* ---------- 桌面原生下载通道（Rust/reqwest） ----------
+ * 价值：Cookie/Referer/User-Agent 等浏览器禁止头都能发、不受 CORS 拦——
+ * 内网系统、防盗链链接在桌面版也能下。输出目录用 Tauri 对话框选的真实路径
+ * （浏览器句柄没有路径可给 Rust），断点续传/跳过按磁盘上的文件大小判断。
+ * 与浏览器通道的差异：①暂停只在任务之间生效（进行中的任务不打断）；
+ * ②扩展名 MIME 探测跳过（文件名保持扫描时的推断）；③SHA-256 由 Rust 端计算。 */
+async function downloadTaskNative(t){
+  var D = TB.desktop;
+  if(!D || !D.httpDownload) throw new Error('原生下载通道不可用（桌面桥未加载）');
+  var g = t.group;
+  var dupMode = $('optDup').value;
+  var dest = S.nativeOut + '\\' + g.outName + '\\' + t.filename;
+
+  var existSize = 0;
+  try{ existSize = await D.fileSize(dest); }catch(e){ existSize = 0; }
+  if(dupMode === 'skip' && existSize > 0){
+    t.status = 'skip'; t.loaded = existSize; t.total = existSize;
+    paintTask(t); return 'skip';
+  }
+
+  t.status = 'run';
+  t.loaded = (dupMode === 'resume') ? existSize : 0;
+  paintTask(t);
+
+  var info = customHeaderInfo();
+  var headers = [];
+  Object.keys(info.raw).forEach(function(k){ headers.push([k, info.raw[k]]); });
+
+  var retried = 0, maxRetry = 3, lastUi = 0;
+  while(true){
+    try{
+      var finalSize = await D.httpDownload({
+        id: t.id, url: t.url, dest: dest, headers: headers,
+        resume: dupMode === 'resume',
+        onProgress: function(p){
+          if(S.stopAll){ try{ D.httpCancel(t.id); }catch(e){} return; }
+          var delta = p.loaded - t.loaded;
+          if(delta > 0) S.bytes += delta;
+          t.loaded = p.loaded;
+          if(p.total) t.total = p.total;
+          var now3 = Date.now();
+          if(now3 - lastUi > 180){ lastUi = now3; paintTask(t); }
+        }
+      });
+      if(finalSize != null){
+        var delta2 = finalSize - t.loaded;
+        if(delta2 > 0) S.bytes += delta2;
+        t.loaded = finalSize;
+        if(!t.total) t.total = finalSize;
+      }
+      t.status = 'ok'; paintTask(t);
+      if($('optHashSha').checked) computeHashNative(t, dest);
+      return 'ok';
+    }catch(e){
+      var msg = String((e && e.message) || e);
+      if(S.stopAll || /cancel/i.test(msg)){ t.status = 'pause'; paintTask(t); return 'stop'; }
+      if(++retried > maxRetry) throw new Error('重试 3 次仍失败：' + msg);
+      await sleep(800 * retried);
+    }
+  }
+}
+async function computeHashNative(t, dest){
+  try{
+    t.hashSha256 = await TB.desktop.sha256File(dest);
+    t.hashSize = t.loaded || 0;
+    paintTask(t);
+  }catch(e){
+    t.hashErr = e.message || String(e);
+    paintTask(t);
+  }
+}
+
 async function computeHashAsync(t, fh){
   try{
     var file = await fh.getFile();
@@ -636,6 +715,10 @@ async function writeChecksums(g){
     }
   });
   if(!n){ return { ok:false, n:0 }; }
+  if(S.nativeMode){
+    await TB.desktop.saveText(S.nativeOut + '\\' + g.outName + '\\_checksums.sha256.txt', lines.join('\n') + '\n');
+    return { ok:true, n:n, file:'_checksums.sha256.txt' };
+  }
   var fh = await g.outHandle.getFileHandle('_checksums.sha256.txt', {create:true});
   var w = await fh.createWritable();
   await w.write(lines.join('\n') + '\n');
@@ -646,6 +729,7 @@ async function writeChecksums(g){
 $('btnStart').onclick = function(){
   var list = TASKS.filter(function(t){ return t.sel; });
   if(!list.length){ notice('warn','请先勾选任务。'); return; }
+  if(S.nativeMode && !S.nativeOut){ notice('warn','原生下载通道已开启，但还没选「原生输出」目录。'); return; }
   warnForbiddenHeaders();
   var pending = list.filter(function(t){ return t.status!=='ok' && t.status!=='skip'; });
   if(!pending.length){
@@ -804,6 +888,34 @@ $('btnExpFail').onclick = function(){
   var blob = new Blob(['\ufeff' + txt], {type:'text/plain;charset=utf-8'});
   U.saveBlob(blob, '失败清单.txt');
   notice('info','已导出 失败清单.txt（' + fails.length + ' 条）——放回源文件夹重新扫描即可再下。');
+};
+
+/* ---------- 原生下载通道 UI（仅桌面壳里显示） ---------- */
+if(window.__TAURI__){
+  $('optNativeLabel').style.display = '';
+  $('nativeOutRow').style.display = '';
+}
+$('optNative').onchange = function(){
+  S.nativeMode = this.checked;
+  if(!this.checked) return;
+  if(!S.nativeOut){
+    notice('info','已启用原生下载通道：请在上方「原生输出」选一个输出目录（系统对话框，Rust 需要真实路径）。');
+  }
+  var info = customHeaderInfo();
+  if(info.forbidden.length){
+    notice('info','原生通道下这些头会真正生效：' + esc(info.forbidden.map(function(f){ return f.name; }).join('、')));
+  }
+};
+$('btnNativeOut').onclick = async function(){
+  var D = TB.desktop;
+  if(!D || !D.pickFolder){ notice('err','原生下载通道仅桌面版可用。'); return; }
+  try{
+    var d = await D.pickFolder();
+    if(!d) return;
+    S.nativeOut = d.path;
+    $('nativeOutPath').value = d.path + '\\';
+    notice('info','原生输出目录：' + esc(d.path));
+  }catch(e){ notice('err','选择失败：' + esc(e.message||e)); }
 };
 
 /* ---------- 导出 ---------- */

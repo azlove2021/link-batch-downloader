@@ -288,6 +288,42 @@ $('ctxUnregister').onclick = async function(){
 
 refreshEnv();
 
+/* ---------- 原生下载通道（Rust/reqwest） ----------
+ * 绕过浏览器限制：Cookie/Referer/UA 等禁止头都能发、不受 CORS 拦。
+ * http-progress 事件按任务 id 过滤，下载结束（成败都算）后注销监听。 */
+async function pickFolder(){
+  var t = tauri();
+  if (!t || !t.dialog || !t.dialog.open) return null;
+  var p = await t.dialog.open({ directory: true, multiple: false });
+  if (!p) return null;
+  var path = String(p);
+  return { path: path, name: path.split(/[\\/]/).pop() };
+}
+async function httpDownload(opt){
+  /* opt: {id, url, dest, headers:[[k,v]…], resume, onProgress({loaded,total,done})} → Promise<最终字节数> */
+  var t = tauri();
+  var un = null;
+  if (t && t.event && t.event.listen){
+    un = await t.event.listen('http-progress', function(ev){
+      var p = ev && ev.payload;
+      if (!p || p.id !== opt.id) return;
+      if (opt.onProgress) opt.onProgress(p);
+    });
+  }
+  try{
+    return await invoke('http_download', {
+      id: opt.id, url: opt.url, dest: opt.dest,
+      headers: opt.headers || [], resume: !!opt.resume
+    });
+  } finally {
+    try{ if (typeof un === 'function') un(); }catch(e){}
+  }
+}
+function httpCancel(id){ return invoke('http_cancel', { id: id }).catch(function(){}); }
+function fileSize(p){ return invoke('file_size', { path: p }); }
+function sha256File(p){ return invoke('sha256_file', { path: p }); }
+function saveText(p, text){ return invoke('save_text', { path: p, text: text }); }
+
 /* 打开文件 / 导航事件 */
 if (isDesktop() && tauri().event && tauri().event.listen){
   tauri().event.listen('open-file', function(ev){
@@ -311,7 +347,9 @@ if (isDesktop() && tauri().event && tauri().event.listen){
 
 TB.desktop = {
   invoke: invoke, isDesktop: isDesktop, refreshEnv: refreshEnv,
-  pickFile: pickFile, pickFiles: pickFiles,
+  pickFile: pickFile, pickFiles: pickFiles, pickFolder: pickFolder,
+  httpDownload: httpDownload, httpCancel: httpCancel,
+  fileSize: fileSize, sha256File: sha256File, saveText: saveText,
   env: function(){ return envCache; }
 };
 })();

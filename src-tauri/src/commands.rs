@@ -1,4 +1,4 @@
-//! 桌面能力：环境检测、FFmpeg 转码、LibreOffice 转换、OCR、大文件清理、右键菜单
+//! 桌面能力：环境检测、FFmpeg 转码、LibreOffice 转换、OCR、大文件清理、右键菜单、原生下载
 use serde::Serialize;
 use std::path::{Path, PathBuf};
 use std::process::Command;
@@ -539,4 +539,172 @@ pub fn reveal_in_explorer(path: String) -> Result<(), String> {
         .spawn()
         .map_err(|e| e.to_string())?;
     Ok(())
+}
+
+/* ================= 原生下载通道（reqwest） =================
+ * 价值：webview 的 fetch 发不出 Cookie/Referer/User-Agent 等禁止头，
+ * 跨域也会被 CORS 拦——内网系统、防盗链链接在浏览器里就是下不了。
+ * Rust 端没有这些限制：请求头原样发送、流式落盘、进度用事件推给前端。
+ * 取消/中断时保留半截文件，配合 Range 续传。 */
+
+use futures_util::StreamExt;
+use std::io::{Read as IoRead, Seek, SeekFrom, Write as IoWrite};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, Mutex};
+use tauri::Emitter;
+
+/// 下载任务的取消标志表（id 由前端分配）
+#[derive(Default)]
+pub struct DlCancel(pub Mutex<std::collections::HashMap<u64, Arc<AtomicBool>>>);
+
+#[derive(Serialize, Clone)]
+struct DlProgress {
+    id: u64,
+    loaded: u64,
+    total: Option<u64>,
+    done: bool,
+}
+
+/// 流式下载 url 到 dest。resume=true 且本地已有半截文件时自动 Range 续传。
+/// 返回最终文件字节数；取消/断网返回 Err（半截文件保留，下次可续传）。
+#[tauri::command]
+pub async fn http_download(
+    app: tauri::AppHandle,
+    state: tauri::State<'_, DlCancel>,
+    id: u64,
+    url: String,
+    dest: String,
+    headers: Vec<(String, String)>,
+    resume: bool,
+) -> Result<u64, String> {
+    let client = reqwest::Client::builder()
+        .connect_timeout(std::time::Duration::from_secs(20))
+        .build()
+        .map_err(|e| e.to_string())?;
+    let mut req = client.get(&url);
+    let mut has_range = false;
+    for (k, v) in &headers {
+        if k.eq_ignore_ascii_case("range") {
+            has_range = true;
+        }
+        req = req.header(k.as_str(), v.as_str());
+    }
+    let path = Path::new(&dest);
+    let mut start: u64 = 0;
+    if resume && path.is_file() {
+        start = std::fs::metadata(path).map(|m| m.len()).unwrap_or(0);
+        if start > 0 && !has_range {
+            req = req.header("Range", format!("bytes={}-", start));
+        }
+    }
+    let resp = req.send().await.map_err(|e| format!("网络错误：{}", e))?;
+    let code = resp.status().as_u16();
+    if code == 416 && start > 0 {
+        return Ok(start); // Range 不满足：本地多半已经是完整文件
+    }
+    if !(200..300).contains(&code) {
+        return Err(format!("HTTP {}", code));
+    }
+    if start > 0 && code != 206 {
+        start = 0; // 服务器不支持续传 → 从头下
+    }
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| format!("创建目录失败：{}", e))?;
+    }
+    let mut file = std::fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(start == 0)
+        .open(path)
+        .map_err(|e| format!("无法写入文件：{}", e))?;
+    if start > 0 {
+        file.seek(SeekFrom::Start(start)).map_err(|e| e.to_string())?;
+    }
+
+    let total = resp.content_length().map(|l| l + start);
+    let cancel = Arc::new(AtomicBool::new(false));
+    state.0.lock().unwrap().insert(id, cancel.clone());
+
+    let mut stream = resp.bytes_stream();
+    let mut loaded = start;
+    let mut last_emit = std::time::Instant::now();
+    let mut failure: Option<String> = None;
+    while let Some(chunk) = stream.next().await {
+        if cancel.load(Ordering::Relaxed) {
+            failure = Some("cancelled".into());
+            break;
+        }
+        match chunk {
+            Ok(bytes) => {
+                if let Err(e) = file.write_all(&bytes) {
+                    failure = Some(format!("写盘失败：{}", e));
+                    break;
+                }
+                loaded += bytes.len() as u64;
+                if last_emit.elapsed().as_millis() >= 100 {
+                    last_emit = std::time::Instant::now();
+                    let _ = app.emit(
+                        "http-progress",
+                        DlProgress { id, loaded, total, done: false },
+                    );
+                }
+            }
+            Err(e) => {
+                failure = Some(format!("连接中断：{}", e));
+                break;
+            }
+        }
+    }
+    let _ = file.flush();
+    drop(file);
+    state.0.lock().unwrap().remove(&id);
+    if let Some(msg) = failure {
+        return Err(msg);
+    }
+    let _ = app.emit("http-progress", DlProgress { id, loaded, total, done: true });
+    Ok(loaded)
+}
+
+/// 取消进行中的下载（半截文件保留，可续传）
+#[tauri::command]
+pub fn http_cancel(state: tauri::State<'_, DlCancel>, id: u64) -> Result<(), String> {
+    if let Some(flag) = state.0.lock().unwrap().get(&id) {
+        flag.store(true, Ordering::Relaxed);
+    }
+    Ok(())
+}
+
+/// 文件大小（不存在返回 0 —— 前端 skip/resume 判断用）
+#[tauri::command]
+pub fn file_size(path: String) -> Result<u64, String> {
+    match std::fs::metadata(&path) {
+        Ok(m) if m.is_file() => Ok(m.len()),
+        _ => Ok(0),
+    }
+}
+
+/// 本地文件 SHA-256（原生模式下载完校验用；浏览器句柄够不到原生路径的文件）
+#[tauri::command]
+pub fn sha256_file(path: String) -> Result<String, String> {
+    use sha2::{Digest, Sha256};
+    let mut f = std::fs::File::open(&path).map_err(|e| e.to_string())?;
+    let mut hasher = Sha256::new();
+    let mut buf = [0u8; 1 << 16];
+    loop {
+        let n = f.read(&mut buf).map_err(|e| e.to_string())?;
+        if n == 0 {
+            break;
+        }
+        hasher.update(&buf[..n]);
+    }
+    Ok(hasher.finalize().iter().map(|b| format!("{:02x}", b)).collect())
+}
+
+/// 写文本文件（原生模式落 _checksums.sha256.txt 用）
+#[tauri::command]
+pub fn save_text(path: String, text: String) -> Result<(), String> {
+    if let Some(parent) = Path::new(&path).parent() {
+        std::fs::create_dir_all(parent).map_err(|e| e.to_string())?;
+    }
+    std::fs::write(&path, text).map_err(|e| e.to_string())
 }
