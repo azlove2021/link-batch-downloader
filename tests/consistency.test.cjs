@@ -198,6 +198,7 @@ const ORDER_PAIRS = [
   ['js/invoice-core.js', 'js/invoice.js'],
   ['js/download-core.js', 'js/download.js'],
   ['js/folder-core.js', 'js/folderorg.js'],
+  ['js/dup-core.js', 'js/dupfind.js'],
   /* 数据工作台：纯函数核心要先于使用它的两个文件加载（顺序错了功能会静默失效） */
   ['js/data-core.js', 'js/datawork.js'],
   ['js/data-core.js', 'js/data-batch.js'],

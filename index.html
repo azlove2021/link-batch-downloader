@@ -279,6 +279,39 @@
         </div>
       </section>
 
+      <!-- ========== 重复文件查找 ========== -->
+      <section id="tool-dupfind" class="tool">
+        <h2 class="th">重复文件查找</h2>
+        <p class="td">按内容 SHA-256 找完全重复的文件，或按文件名找相似文件。可导出清单，或把副本移入隔离文件夹（不删除、可撤销）。</p>
+        <div class="card">
+          <div class="card-h"><h3>扫描文件夹</h3><span class="tip">递归扫描所有子文件夹，跳过隐藏文件</span></div>
+          <div class="card-b">
+            <div class="pathbox">
+              <span class="lbl">源文件夹</span>
+              <input id="dfPath" readonly placeholder="未选择（Chrome/Edge 可原地整理）">
+              <button id="dfBrowse" class="pri">浏览…</button>
+              <button id="dfClear" class="sm">清空</button>
+            </div>
+            <div class="opts">
+              <label><input type="checkbox" id="dfModeContent" checked> 内容完全重复（按大小分组 + SHA-256，精确）</label>
+              <label><input type="checkbox" id="dfModeName"> 文件名相似（找「报告.docx / 报告 (1).docx」这类）</label>
+              <label>相似阈值 <input type="number" id="dfThreshold" value="0.88" min="0.5" max="1" step="0.02" style="width:70px"></label>
+            </div>
+            <div class="row">
+              <button id="dfScan" class="pri" disabled>开始扫描</button>
+              <button id="dfExpCsv" class="sm" disabled>导出清单 CSV</button>
+              <button id="dfQuarantine" title="把内容重复组里多余的副本移入根目录「_重复文件」子文件夹（每组保留层级最浅的一个）" disabled>移入 _重复文件</button>
+              <button id="dfUndo" title="把最近一次移动的副本还原回原位置（本次会话内有效）" disabled>撤销移动</button>
+              <span class="muted" id="dfStat"></span>
+            </div>
+            <div class="muted" style="margin-top:8px">
+              不删除任何文件：「移入 _重复文件」只是移动，随时可撤销；也可以只导出清单自己处理。
+            </div>
+            <div id="dfList" style="margin-top:10px"></div>
+          </div>
+        </div>
+      </section>
+
       <!-- ========== 1. 批量下载 ========== -->
       <section id="tool-dl" class="tool">
         <h2 class="th">批量下载</h2>
@@ -1336,6 +1369,8 @@
 <script src="js/rename.js"></script>
 <script src="js/folder-core.js"></script>
 <script src="js/folderorg.js"></script>
+<script src="js/dup-core.js"></script>
+<script src="js/dupfind.js"></script>
 <script src="js/desktop.js"></script>
 <script src="js/app.js"></script>
 </body>

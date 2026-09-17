@@ -34,6 +34,7 @@ var TOOLS = [
   { id:'folder', name:'文件夹归类', desc:'按扩展名/日期/关键字自动归子文件夹', k:'文件夹 归类 整理 发票 周报 自动', tier:2, grp:'文件与整理' },
   { id:'dl', name:'批量下载', desc:'扫 txt 清单，分目录批量下载，预检/自定义头/续传/失败重跑', k:'download 下载 链接 批量 txt cookie header 请求头 预检 探测 失败 重跑 防盗链', tier:2, grp:'文件与整理' },
   { id:'hash', name:'哈希校验', desc:'文件/文件夹 SHA-256 / MD5，可对比', k:'hash sha md5 校验 摘要 对比 一致', tier:2, grp:'文件与整理' },
+  { id:'dupfind', name:'重复文件查找', desc:'内容SHA-256找重复、相似文件名、隔离可撤销', k:'duplicate 重复 文件 查重 相似 哈希 清理 空间 副本', tier:2, grp:'文件与整理' },
 
   { id:'qr', name:'二维码生成', desc:'文本链接转二维码 PNG', k:'qr 二维码 条码', tier:3, grp:'办公实用' },
   { id:'av', name:'音视频转码', desc:'本机 FFmpeg 转换（桌面版）', k:'ffmpeg 音视频 转码 mp4 mp3 gif 桌面', tier:3, grp:'格式转换' },
@@ -46,6 +47,7 @@ var TOOLS = [
 var ICONS = {
   home:'🏠', data:'📊', rename:'✏️', diff:'±', convert:'🔄',
   invoice:'🧾', pdf:'📄', text:'📝', image:'🖼️', folder:'🗂', dl:'📥', hash:'🔒',
+  dupfind:'👯',
   qr:'▣', av:'🎬', offconv:'📑', ocr:'👁', clean:'🧹', desk:'⚙️'
 };
 
