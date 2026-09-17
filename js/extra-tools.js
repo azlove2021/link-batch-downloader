@@ -1,7 +1,7 @@
-/* ============ PDF 加密 / 解密 / 哈希对比 / 颜色 / SQL ============ */
+/* ============ PDF 加密 / 哈希对比 / 颜色 / SQL ============ */
 'use strict';
 
-/* ---------- PDF 加密解密 ---------- */
+/* ---------- PDF 加密 ---------- */
 (function(){
 var U = TB.util;
 var $ = U.$, notice = U.notice, esc = U.esc;
@@ -21,38 +21,33 @@ $('pdfCryptFiles').onchange = async function(){
 
 $('pdfCryptRun').onclick = async function(){
   if (!buf){ notice('warn','请先选择 PDF'); return; }
-  var mode = $('pdfCryptMode').value;
   var pass = $('pdfCryptPass').value;
   if (!pass){ notice('warn','请输入密码'); return; }
   var btn = this; btn.disabled = true; btn.textContent = '处理中…';
   try{
-    if (mode === 'encrypt'){
-      var doc = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
-      var out = await doc.save({
-        userPassword: pass,
-        ownerPassword: pass + '_owner',
-        permissions: {
-          printing: 'highResPrint',
-          modifying: false,
-          copying: false,
-          annotating: true,
-          fillingForms: true,
-          contentAccessibility: true,
-          documentAssembly: true
-        }
-      });
-      U.saveBlob(new Blob([out], {type:'application/pdf'}), fname.replace(/\.pdf$/i,'') + '_加密.pdf');
-      notice('info','已加密并下载');
-      $('pdfCryptMsg').textContent = '输出 ' + U.fmtSize(out.length) + ' · 已用用户密码保护';
-    } else {
-      var doc2 = await PDFLib.PDFDocument.load(buf, { userPassword: pass, ignoreEncryption: true });
-      var out2 = await doc2.save();
-      U.saveBlob(new Blob([out2], {type:'application/pdf'}), fname.replace(/\.pdf$/i,'') + '_解密.pdf');
-      notice('info','已解密并下载');
-      $('pdfCryptMsg').textContent = '输出 ' + U.fmtSize(out2.length) + ' · 页数 ' + doc2.getPageCount();
-    }
+    // 只支持「给未加密 PDF 添加打开密码」。
+    // 原「解密」分支已移除：pdf-lib 不支持按密码解密（userPassword 选项被静默忽略），
+    // 那条分支只会产出损坏文件，属于误导性功能。
+    // 另注：这里用的是 PDF 标准加密（RC4），不是 AES-256。
+    var doc = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
+    var out = await doc.save({
+      userPassword: pass,
+      ownerPassword: pass + '_owner',
+      permissions: {
+        printing: 'highResPrint',
+        modifying: false,
+        copying: false,
+        annotating: true,
+        fillingForms: true,
+        contentAccessibility: true,
+        documentAssembly: true
+      }
+    });
+    U.saveBlob(new Blob([out], {type:'application/pdf'}), fname.replace(/\.pdf$/i,'') + '_已加密.pdf');
+    notice('info','已加密并下载');
+    $('pdfCryptMsg').textContent = '输出 ' + U.fmtSize(out.length) + ' · 打开文件需要输入密码';
   }catch(e){
-    notice('err', mode === 'encrypt' ? ('加密失败：' + esc(e.message)) : ('解密失败：密码错误或文件损坏'));
+    notice('err','加密失败：' + esc(e.message));
     $('pdfCryptMsg').textContent = e.message || '';
   }finally{
     btn.disabled = false; btn.textContent = '处理 PDF';

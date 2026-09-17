@@ -24,6 +24,8 @@
 
 便携版请**整夹拷贝**（必须带 `resources\`，否则转码不可用）。二者都内置 FFmpeg；OCR 默认用 Windows 系统识别；Tesseract / LibreOffice 见「桌面设置 → 可选增强组件」。
 
+从源码打包：`npm install` 后执行 `npm run build`（会先 `npm run sync` 把网页资源同步到 `web/`），产物在 `dist/`。详见 [BUILD_TAURI.md](BUILD_TAURI.md)。
+
 桌面版能力：
 
 | 功能 | 依赖 |
@@ -160,12 +162,12 @@ Project_010_链接批量下载器/
 ├── package.json
 ├── BUILD_TAURI.md
 ├── dist/                 # 本地生成的安装包（gitignore）
-├── 链接批量下载器.html  # 旧版单文件（可删，功能已并入）
+├── 链接批量下载器.html  # 升级引导页（自动跳转 index.html，可删）
 ├── README.md
 └── LICENSE
 ```
 
-旧的 `链接批量下载器.html` 仍可单独使用；新入口统一走 `index.html`。
+旧的 `链接批量下载器.html` 现在是**升级引导页**：打开后提示已改名为「办公工具箱」，并自动跳转到 `index.html`。它本身不再包含任何功能，入口统一走 `index.html`。
 
 ---
 
@@ -181,7 +183,7 @@ Project_010_链接批量下载器/
 | PDF 编辑 | [pdf-lib](https://github.com/Hopding/pdf-lib)（本地 vendor） |
 | Markdown | [markdown-it](https://github.com/markdown-it/markdown-it)（本地 vendor） |
 | PDF 文字 | 内置轻量解析（FlateDecode + ToUnicode），电子发票文字层可用；扫描件需先 OCR |
-| 额外依赖 | 仅 `js/vendor/` 下两个库，仍可完全离线双击使用 |
+| 额外依赖 | `js/vendor/` 下 **3** 个库：pdf-lib（512KB）、markdown-it（121KB）、xlsx（861KB）。全部本地化，仍可完全离线双击使用 |
 
 ---
 

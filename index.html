@@ -1432,17 +1432,11 @@
 
       <!-- ========== PDF 加密 ========== -->
       <section id="tool-pdfcrypt" class="tool">
-        <h2 class="th">PDF 加密 / 解密</h2>
-        <p class="td">本地用 pdf-lib 设置打开密码并限制打印/复制；也可用密码解密已加密 PDF。</p>
+        <h2 class="th">PDF 加密</h2>
+        <p class="td">本地给 PDF 添加打开密码，并限制打印 / 复制 / 修改。<b>注意</b>：使用的是 PDF 标准加密（RC4），适合防止随手翻看，<b>不适合高保密文件</b>；已加密的 PDF 无法在这里解密，请用原加密工具或专业软件处理。</p>
         <div class="card">
           <div class="card-b">
             <div class="row mb">
-              <label class="inline">模式
-                <select id="pdfCryptMode">
-                  <option value="encrypt">加密</option>
-                  <option value="decrypt">解密</option>
-                </select>
-              </label>
               <label class="inline">密码
                 <input type="text" id="pdfCryptPass" placeholder="打开密码" style="width:180px">
               </label>

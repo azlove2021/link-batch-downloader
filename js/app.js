@@ -36,7 +36,7 @@ var TOOLS = [
   { id:'crop', name:'图片裁剪', desc:'框选裁剪、比例锁、导出', k:'crop 裁剪 剪切 图片 比例' },
   { id:'stitch', name:'长图拼接', desc:'多图拼横向/竖向长图', k:'stitch 拼接 长图 合并 图片' },
   { id:'pdf', name:'PDF 工具', desc:'合并、拆分、旋转、页码、提取页', k:'pdf 合并 拆分 旋转 页码 文档' },
-  { id:'pdfcrypt', name:'PDF 加密', desc:'加密/解密 PDF 密码', k:'pdf encrypt decrypt 密码 加密 解密' },
+  { id:'pdfcrypt', name:'PDF 加密', desc:'给 PDF 设置打开密码', k:'pdf encrypt 密码 加密 只读 保护' },
   { id:'md', name:'Markdown 编辑器', desc:'分屏预览、草稿、导出 HTML', k:'markdown md 预览 编辑器 草稿' },
   { id:'invoice', name:'发票提取', desc:'发票号码/金额/购销方，导出表格', k:'invoice 发票 报销 税号 金额' },
   { id:'qr', name:'二维码生成', desc:'文本链接转二维码 PNG', k:'qr 二维码 条码' },
