@@ -446,7 +446,7 @@ $('invLedger').onchange = async function(){
   try{
     var rows;
     if(/\.(xlsx|xls)$/i.test(f.name)){
-      if(!window.XLSX) throw new Error('Excel 组件未加载');
+      await TB.loadVendor('xlsx');   /* 按需加载；失败会 throw，由外层 catch 提示 */
       var wb = XLSX.read(new Uint8Array(await f.arrayBuffer()), {type:'array'});
       rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header:1, raw:false, defval:''});
     }else{

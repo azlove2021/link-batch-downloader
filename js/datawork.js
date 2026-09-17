@@ -191,7 +191,8 @@ function rebuildView(keepScroll){
  * 重复声明了 headers/body（var 提升导致能跑但很危险）。 */
 async function parseAnyFile(file){
   var name = file.name;
-  if (/\.(xlsx|xlsm|xls)$/i.test(name) && window.XLSX){
+  if (/\.(xlsx|xlsm|xls)$/i.test(name)){
+    await TB.loadVendor('xlsx');   /* 按需加载；失败会 throw，由调用方 catch 统一提示 */
     var ab = await file.arrayBuffer();
     var wb = XLSX.read(ab, { type: 'array', dense: true });
     var sheet = wb.SheetNames[0];
@@ -590,9 +591,9 @@ $('dwExportView').onclick = function(){
   exportRows(DS.headers, rows, (DS.name || '数据').replace(/\.[^.]+$/, '') + '_筛选结果');
 };
 $('dwExportXlsx').onclick = async function(){
-  if (!window.XLSX){ notice('err', '未加载 xlsx 库'); return; }
   var btn = this; btn.disabled = true; btn.textContent = '生成中…';
   try{
+    await TB.loadVendor('xlsx');
     var rows = DS.view.map(function(i){ return DS.rows[i]; });
     var aoa = [DS.headers].concat(rows);
     var ws = XLSX.utils.aoa_to_sheet(aoa);

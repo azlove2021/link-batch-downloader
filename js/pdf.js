@@ -4,12 +4,15 @@
 var U = TB.util;
 var $ = U.$, notice = U.notice, esc = U.esc;
 
-if (typeof window.PDFLib === 'undefined') {
-  notice('err','pdf-lib 未加载，PDF 工具不可用。请确认 js/vendor/pdf-lib.min.js 存在。');
-  return;
+/* pdf-lib(512KB) 改为按需加载：首屏不再引入，所有用到 PDFLib 的入口
+ * 先 await ensurePdfLib()；加载失败会 throw，由入口自己的 catch 提示。 */
+var PDFLib = null;
+async function ensurePdfLib(){
+  if (PDFLib) return PDFLib;
+  await TB.loadVendor('pdflib');
+  PDFLib = window.PDFLib;
+  return PDFLib;
 }
-
-var PDFLib = window.PDFLib;
 var files = []; // {name, bytes:Uint8Array, id}
 var mode = 'merge';
 var nextId = 1;
@@ -128,6 +131,7 @@ function renderList(){
   // async page counts
   files.forEach(async function(f){
     try{
+      await ensurePdfLib();
       var doc = await PDFLib.PDFDocument.load(f.bytes, { ignoreEncryption: true });
       var n = doc.getPageCount();
       var el = box.querySelector('.pdf-pages[data-id="'+f.id+'"]');
@@ -173,6 +177,7 @@ function parsePageSpec(spec, pageCount){
 }
 
 async function concatPdfBytes(list){
+  await ensurePdfLib();
   var out = await PDFLib.PDFDocument.create();
   for (var i=0;i<list.length;i++){
     var src = await PDFLib.PDFDocument.load(list[i], { ignoreEncryption: true });
@@ -195,6 +200,7 @@ $('pdfRun').onclick = async function(){
   if (!files.length){ notice('warn','请先添加 PDF'); return; }
   var btn = this; btn.disabled = true; btn.textContent = '处理中…';
   try{
+    await ensurePdfLib();
     if (mode === 'merge'){
       if (files.length < 2) notice('info','只有一个文件，直接复制导出');
       var doc = await concatPdfBytes(files.map(function(f){ return f.bytes; }));
@@ -325,8 +331,7 @@ setMode('merge');
 (function(){
 var U = TB.util;
 var $ = U.$, notice = U.notice, esc = U.esc;
-if (typeof window.PDFLib === 'undefined') return;
-var PDFLib = window.PDFLib;
+var PDFLib = null;   /* 按需加载：pdfCryptRun 里先 TB.loadVendor 再用 */
 var buf = null, fname = '';
 
 $('pdfCryptPick').onclick = function(){ $('pdfCryptFiles').click(); };
@@ -349,6 +354,7 @@ $('pdfCryptRun').onclick = async function(){
     // 原「解密」分支已移除：pdf-lib 不支持按密码解密（userPassword 选项被静默忽略），
     // 那条分支只会产出损坏文件，属于误导性功能。
     // 另注：这里用的是 PDF 标准加密（RC4），不是 AES-256。
+    if (!PDFLib){ await TB.loadVendor('pdflib'); PDFLib = window.PDFLib; }
     var doc = await PDFLib.PDFDocument.load(buf, { ignoreEncryption: true });
     var out = await doc.save({
       userPassword: pass,

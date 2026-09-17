@@ -327,6 +327,36 @@ function toCsv(rows, delim){
 }
 
 /* 导出到全局 */
+/* ---------- vendor 按需加载 ----------
+ * xlsx(861KB) / pdf-lib(512KB) 不再随首屏加载，工具首次用到时动态注入 <script>。
+ * 动态 <script> 在 file:// 双击场景下同样有效（fetch 本地文件才会被 CORS 拦，script 不会）。
+ * 并发调用共享同一个 Promise；加载失败 reject 并清缓存，下次点击可重试。 */
+var VENDOR_MAP = {
+  xlsx:   { src:'js/vendor/xlsx.full.min.js', global:'XLSX' },
+  pdflib: { src:'js/vendor/pdf-lib.min.js',   global:'PDFLib' }
+};
+var vendorLoading = {};
+function loadVendor(name){
+  var v = VENDOR_MAP[name];
+  if(!v) return Promise.reject(new Error('未知 vendor: ' + name));
+  if(window[v.global]) return Promise.resolve(window[v.global]);
+  if(vendorLoading[name]) return vendorLoading[name];
+  vendorLoading[name] = new Promise(function(resolve, reject){
+    var s = document.createElement('script');
+    s.src = v.src;
+    s.onload = function(){
+      window[v.global] ? resolve(window[v.global])
+                       : reject(new Error(v.src + ' 未定义 window.' + v.global));
+    };
+    s.onerror = function(){
+      delete vendorLoading[name];
+      reject(new Error(v.src + ' 加载失败（文件缺失或被移动？）'));
+    };
+    document.head.appendChild(s);
+  });
+  return vendorLoading[name];
+}
+
 TB.util = {
   $:$, esc:esc, fmtSize:fmtSize, fmtSpeed:fmtSpeed, fmtEta:fmtEta,
   safeName:safeName, notice:notice, saveBlob:saveBlob, copyText:copyText,
@@ -335,3 +365,4 @@ TB.util = {
   FS_OK:FS_OK
 };
 TB.FS_OK = FS_OK;
+TB.loadVendor = loadVendor;

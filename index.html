@@ -1310,8 +1310,8 @@
   </main>
 </div>
 
-<script src="js/vendor/pdf-lib.min.js"></script>
-<script src="js/vendor/xlsx.full.min.js"></script>
+<!-- pdf-lib(512KB) / xlsx(861KB) 改为按需加载：工具首次使用时由 core.js 的
+     TB.loadVendor 动态注入，首屏省 ~1.35MB；file:// 双击场景同样有效。 -->
 <script src="js/core.js"></script>
   <script src="js/data-core.js"></script>
 <script src="js/datawork.js"></script>
