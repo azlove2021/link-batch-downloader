@@ -280,7 +280,7 @@
       <!-- ========== 1. 批量下载 ========== -->
       <section id="tool-dl" class="tool">
         <h2 class="th">批量下载</h2>
-        <p class="td">扫描文件夹里的 txt，按文件名自动分目录下载。支持断点续传、SHA-256 校验、导出清单。</p>
+        <p class="td">扫描文件夹里的 txt，按文件名自动分目录下载。支持下载前预检、自定义请求头 / 登录 Cookie、断点续传、SHA-256 校验、失败重跑与清单导出。</p>
 
         <div class="card">
           <div class="card-h">
@@ -308,7 +308,17 @@
                 <option value="over">重新下载</option>
               </select></label>
               <label title="下载完成后立刻算 SHA-256"><input type="checkbox" id="optHashSha" checked> 算 SHA-256（写入下载目录）</label>
+              <label title="发送浏览器里目标站点已有的登录 Cookie（需对方站点允许凭据跨域；在下方写了 Cookie 头时会自动启用）"><input type="checkbox" id="optCreds"> 携带登录 Cookie</label>
             </div>
+            <details class="help" style="margin-top:10px">
+              <summary>自定义请求头（内网系统 / token / 防盗链站点）</summary>
+              <div>
+                <textarea id="optHeaders" style="width:100%;min-height:64px;font-family:monospace" placeholder="每行一条，格式  头名: 值&#10;例如：&#10;Authorization: Bearer eyJhbGci...&#10;X-Api-Key: 123456"></textarea>
+                <div class="muted" style="margin-top:6px">对预检、扩展名探测和正式下载的全部请求生效。浏览器安全限制：<b>Cookie / Referer / User-Agent 等头无法手动设置</b>——
+                想带 Cookie 请勾选上方「携带登录 Cookie」（发送浏览器里该站点已有的 cookie，自定义 Cookie 值发不出去）；
+                必须伪造特定 Referer 的防盗链站点浏览器端无解，建议改用桌面下载器。</div>
+              </div>
+            </details>
             <div style="margin-top:14px">
               <button id="btnScan" class="pri">扫描链接</button>
               <span class="muted" style="margin-left:10px">点扫描后，下方会列出所有 txt 里的链接；勾选要下的，开始下载。</span>
@@ -353,8 +363,11 @@
               <option>1</option><option>2</option><option selected>4</option>
               <option>6</option><option>8</option><option>12</option>
             </select></label>
+            <button id="btnProbe" title="下载前并发探测所有勾选链接（8 路并发、单条 10 秒超时），废链提前标出">预检链接</button>
+            <button id="btnRetryFail" title="只勾选失败/中断项并重新下载">重跑失败项</button>
             <span class="grow"></span>
             <button class="sm" id="btnExpSha" title="把所有已算的 SHA-256 写到每个分组目录下的 _checksums.sha256.txt">导出 SHA-256</button>
+            <button class="sm" id="btnExpFail" title="把失败/中断项导出为 txt，放回源文件夹重新扫描即可再下">导出失败清单</button>
             <button class="sm" id="btnExpTxt">导出 TXT</button>
             <button class="sm" id="btnExpXlsx">导出 Excel</button>
           </div>
@@ -1304,6 +1317,7 @@
 <script src="js/datawork.js"></script>
   <script src="js/data-batch.js"></script>
 <script src="js/outdir.js"></script>
+<script src="js/download-core.js"></script>
 <script src="js/download.js"></script>
 <script src="js/hash.js"></script>
 <script src="js/text-core.js"></script>

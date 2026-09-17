@@ -5,6 +5,34 @@
 var U = TB.util;
 var $ = U.$, notice = U.notice, esc = U.esc, fmtSize = U.fmtSize,
     fmtSpeed = U.fmtSpeed, fmtEta = U.fmtEta, safeName = U.safeName;
+var DC = TB.downloadCore || {};   /* 纯函数核心：js/download-core.js（请求头解析 / 失败清单） */
+
+/* 自定义请求头 + 登录 Cookie → fetch 选项。
+ * 浏览器禁止手动设置 Cookie / Referer / User-Agent 等头，parseHeaders 已拦截；
+ * 写了 Cookie 头或勾了「携带登录 Cookie」时改用 credentials 模式
+ * （发送浏览器里该站点已有的 cookie，自定义 Cookie 值浏览器发不出去）。 */
+function customHeaderInfo(){
+  var el = $('optHeaders');
+  if(DC.parseHeaders) return DC.parseHeaders(el ? el.value : '');
+  return { headers:{}, forbidden:[], cookieWanted:false };
+}
+function fetchOpts(extraHeaders, signal){
+  var info = customHeaderInfo();
+  var h = {};
+  Object.keys(info.headers).forEach(function(k){ h[k] = info.headers[k]; });
+  if(extraHeaders) Object.keys(extraHeaders).forEach(function(k){ h[k] = extraHeaders[k]; });
+  var opts = { headers: h };
+  if(signal) opts.signal = signal;
+  if($('optCreds').checked || info.cookieWanted) opts.credentials = 'include';
+  return opts;
+}
+function warnForbiddenHeaders(){
+  var info = customHeaderInfo();
+  if(!info.forbidden.length) return;
+  notice('warn','这些请求头被浏览器禁止、已忽略：<b>' +
+    esc(info.forbidden.map(function(f){ return f.name; }).join('、')) + '</b>' +
+    (info.cookieWanted ? '（Cookie 已自动转为「携带登录 Cookie」模式：发送浏览器里该站点已有的 cookie）' : ''));
+}
 
 var MIME_EXT = {
   'application/pdf':'.pdf','video/mp4':'.mp4','image/jpeg':'.jpg','image/png':'.png',
@@ -388,7 +416,9 @@ function paintTask(t){
   else t.elBar.style.background = 'var(--pri)';
   t.elPct.textContent = (t.total||t.loaded) ? (st==='ok'||st==='skip' ? '100%' : pct+'%') : '';
   t.elSz.textContent = t.total ? fmtSize(t.total) : (t.loaded ? fmtSize(t.loaded) : '');
-  var stText = st === 'fail' ? '失败' : (ST_TEXT[st] || '');
+  var stText = st === 'fail' ? '失败'
+             : (st === 'wait' && t.probe && !t.probe.ok) ? '预检 ⚠'
+             : (ST_TEXT[st] || '');
   if(!t._stText){
     t._stText = document.createTextNode(stText);
     t.elSt.appendChild(t._stText);
@@ -414,6 +444,7 @@ function paintTask(t){
   }
   t.elSt.className = 'st ' + st;
   if(st === 'fail' && t.err) t.elSt.title = t.err;
+  else if(st === 'wait' && t.probe) t.elSt.title = t.probe.ok ? ('预检通过：' + t.probe.msg) : ('预检异常：' + t.probe.msg);
 }
 function paintGroup(g){
   var done = 0, fail = 0;
@@ -482,7 +513,7 @@ async function downloadTask(t){
 
   if(!/\.[A-Za-z0-9]{1,8}$/.test(name)){
     try{
-      var pr = await fetch(t.url, {method:'GET', headers:{'Range':'bytes=0-1023'}});
+      var pr = await fetch(t.url, fetchOpts({'Range':'bytes=0-1023'}));
       var ext = extFromMime(pr.headers.get('content-type'));
       pr.body && pr.body.cancel && pr.body.cancel().catch(function(){});
       if(ext){
@@ -501,15 +532,15 @@ async function downloadTask(t){
   }
 
   var pos = (dupMode === 'resume' && existSize > 0) ? existSize : 0;
-  var headers = {};
-  if(pos > 0) headers['Range'] = 'bytes=' + pos + '-';
+  var rangeHeaders = {};
+  if(pos > 0) rangeHeaders['Range'] = 'bytes=' + pos + '-';
 
   var res, retried = 0, maxRetry = 3;
   while(true){
     var ctl = new AbortController();
     var tid = setTimeout(function(){ try{ ctl.abort(); }catch(e){} }, 60000);
     try{
-      res = await fetch(t.url, {headers:headers, signal:ctl.signal});
+      res = await fetch(t.url, fetchOpts(rangeHeaders, ctl.signal));
       clearTimeout(tid);
       break;
     }catch(e){
@@ -615,6 +646,7 @@ async function writeChecksums(g){
 $('btnStart').onclick = function(){
   var list = TASKS.filter(function(t){ return t.sel; });
   if(!list.length){ notice('warn','请先勾选任务。'); return; }
+  warnForbiddenHeaders();
   var pending = list.filter(function(t){ return t.status!=='ok' && t.status!=='skip'; });
   if(!pending.length){
     notice('info','所选任务都已完成，正在重新检查 '+list.length+' 个文件…');
@@ -676,7 +708,8 @@ async function startRun(list){
   if(S.stopAll){
     notice('info','已停止。已下载 '+ok+' 个'+(fail?'，失败 '+fail+' 个':'')+'。再点「开始下载」会接着下。');
   }else{
-    notice(fail ? 'warn' : 'info','本轮结束：成功 '+ok+' 个，失败 '+fail+' 个，共 '+fmtSize(S.bytes)+'。');
+    notice(fail ? 'warn' : 'info','本轮结束：成功 '+ok+' 个，失败 '+fail+' 个，共 '+fmtSize(S.bytes)+'。' +
+      (fail ? '可点「重跑失败项」重试，或「导出失败清单」留档 / 换网络环境再下。' : ''));
   }
   S.stopAll = false;
 }
@@ -701,6 +734,77 @@ function setSel(fn){
   TASKS.forEach(function(t){ t.sel = fn(t); if(t.cb) t.cb.checked = t.sel; });
   updateSummary(true);
 }
+
+/* ---------- 下载前预检：并发探测所有勾选链接，废链下载前就标出来 ----------
+ * 用 GET + Range: bytes=0-0（HEAD 在不少服务器/网盘上不可靠），拿到状态码即取消响应体。
+ * 跨域且无 CORS 的站点 fetch 会直接抛错 —— 如实标「网络错误或跨域限制」，不假装能下。 */
+$('btnProbe').onclick = async function(){
+  if(S.running){ notice('warn','正在下载中，请结束后再预检。'); return; }
+  var list = TASKS.filter(function(t){ return t.sel; });
+  if(!list.length){ notice('warn','请先勾选要预检的任务。'); return; }
+  warnForbiddenHeaders();
+  var btn = this; btn.disabled = true;
+  var done = 0, bad = 0, idx = 0;
+  async function worker(){
+    while(true){
+      var i = idx++;
+      if(i >= list.length) return;
+      var t = list[i];
+      t.probe = await probeOne(t);
+      if(!t.probe.ok) bad++;
+      done++;
+      btn.textContent = '预检中 ' + done + '/' + list.length + ' …';
+      paintTask(t);
+    }
+  }
+  var ws = [];
+  for(var k=0;k<Math.min(8, list.length);k++) ws.push(worker());
+  await Promise.all(ws);
+  btn.disabled = false; btn.textContent = '预检链接';
+  notice(bad ? 'warn' : 'info',
+    '预检完成：共 ' + list.length + ' 条，正常 ' + (list.length - bad) + ' 条，异常 ' + bad + ' 条' +
+    (bad ? '。异常项已标「预检 ⚠」，悬停查看原因；可取消勾选后再开始下载。' : '。'));
+};
+async function probeOne(t){
+  var ctl = new AbortController();
+  var tid = setTimeout(function(){ try{ ctl.abort(); }catch(e){} }, 10000);
+  try{
+    var res = await fetch(t.url, fetchOpts({ 'Range':'bytes=0-0' }, ctl.signal));
+    clearTimeout(tid);
+    try{ res.body && res.body.cancel && res.body.cancel().catch(function(){}); }catch(e){}
+    if(res.ok || res.status === 206 || res.status === 416){
+      var len = parseInt(res.headers.get('content-length') || '0', 10);
+      return { ok:true, status:res.status, msg:'HTTP ' + res.status + (len ? ' · 约 ' + fmtSize(len) : '') };
+    }
+    var why = res.status === 404 ? '（不存在）' : res.status === 403 ? '（被拒绝，可能是防盗链/需要登录）'
+            : res.status === 401 ? '（需要认证，试试自定义请求头或携带登录 Cookie）'
+            : res.status >= 500 ? '（服务器错误）' : '';
+    return { ok:false, status:res.status, msg:'HTTP ' + res.status + why };
+  }catch(e){
+    clearTimeout(tid);
+    if(e && e.name === 'AbortError') return { ok:false, status:0, msg:'超时（10 秒无响应）' };
+    return { ok:false, status:0, msg:'网络错误或跨域限制：' + String(e.message || e).slice(0,80) };
+  }
+}
+
+/* ---------- 失败重跑 / 失败清单 ---------- */
+$('btnRetryFail').onclick = function(){
+  if(S.running){ notice('warn','正在下载中，请结束后再重跑。'); return; }
+  var fails = TASKS.filter(function(t){ return t.status==='fail' || t.status==='pause'; });
+  if(!fails.length){ notice('info','没有失败或中断的项。'); return; }
+  setSel(function(t){ return fails.indexOf(t) >= 0; });
+  warnForbiddenHeaders();
+  startRun(fails);
+};
+$('btnExpFail').onclick = function(){
+  var fails = TASKS.filter(function(t){ return t.status==='fail' || t.status==='pause'; });
+  if(!fails.length){ notice('info','没有失败或中断的项可导出。'); return; }
+  var txt = DC.failListTxt ? DC.failListTxt(fails)
+          : fails.map(function(t){ return (t.title ? t.title + '\t' : '') + t.url; }).join('\r\n');
+  var blob = new Blob(['\ufeff' + txt], {type:'text/plain;charset=utf-8'});
+  U.saveBlob(blob, '失败清单.txt');
+  notice('info','已导出 失败清单.txt（' + fails.length + ' 条）——放回源文件夹重新扫描即可再下。');
+};
 
 /* ---------- 导出 ---------- */
 $('btnExpSha').onclick = async function(){
@@ -749,12 +853,13 @@ $('btnExpXlsx').onclick = async function(){
   var btn = this; btn.disabled = true; btn.textContent = '生成中…';
   try{
     var outRoot = (S.outHandle && S.outHandle.name) || (S.rootHandle && S.rootHandle.name) || '';
-    var headers = ['所属txt','下载根目录','输出目录','序号','标题','文件名','大小(字节)','状态','链接'];
+    var headers = ['所属txt','下载根目录','输出目录','序号','标题','文件名','大小(字节)','状态','链接','失败原因','预检'];
     var rows = [];
     S.groups.forEach(function(g){
       g.tasks.forEach(function(t, i){
         rows.push([g.path, outRoot + '\\', g.outName+'\\', i+1, t.title || '', t.filename,
-                   t.total || 0, ST_TEXT[t.status] || '等待', t.url]);
+                   t.total || 0, ST_TEXT[t.status] || '等待', t.url,
+                   t.err || '', t.probe ? ((t.probe.ok ? '通过 ' : '异常 ') + t.probe.msg) : '']);
       });
     });
     var blob = await U.makeXlsx(headers, rows, '链接清单');
