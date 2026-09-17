@@ -461,7 +461,7 @@
       <!-- ========== 3. 文本处理 ========== -->
       <section id="tool-text" class="tool">
         <h2 class="th">文本处理</h2>
-        <p class="td">一行一行的文字整理利器：多行转一行、去重、排序、提取号码/链接、加序号……</p>
+        <p class="td">一行一行的文字整理利器：多行转一行、去重、排序、提取号码/链接、加序号；还能给手机号/身份证/邮箱打码，一键清洗网页/PDF 粘贴来的乱文本。</p>
         <div class="card">
           <div class="card-h">
             <h3>输入</h3>
@@ -508,6 +508,20 @@
               <button class="sm" id="txReplace">查找替换…</button>
               <button class="sm" id="txPrefix">批量加前缀…</button>
               <button class="sm" id="txSuffix">批量加后缀…</button>
+            </div>
+            <div class="row" style="margin-top:10px">
+              <span class="muted">脱敏：</span>
+              <button class="sm" data-mask="phone">手机号打码</button>
+              <button class="sm" data-mask="idcard">身份证打码</button>
+              <button class="sm" data-mask="email">邮箱打码</button>
+              <button class="sm" data-mask="all">一键全打码</button>
+              <span class="sep"></span>
+              <span class="muted">粘贴清洗：</span>
+              <button class="sm" data-clean="zw">去零宽字符</button>
+              <button class="sm" data-clean="half">全角转半角</button>
+              <button class="sm" data-clean="punct">中英标点统一</button>
+              <button class="sm" data-clean="join">合并断行</button>
+              <button class="sm pri" data-clean="all">一键清洗</button>
             </div>
           </div>
         </div>
@@ -601,7 +615,7 @@
       <!-- ========== 9. 图片工具 ========== -->
       <section id="tool-image" class="tool">
         <h2 class="th">图片工具</h2>
-        <p class="td">本地批量转换格式（PNG / JPG / WebP）、压缩、缩放、加水印。不上传原图。</p>
+        <p class="td">本地批量转换格式（PNG / JPG / WebP）、压缩、缩放、加水印；支持「压到指定 KB」（自动迭代质量，必要时缩小尺寸）。不上传原图。</p>
         <div class="card">
           <div class="card-h">
             <h3>图片</h3>
@@ -620,6 +634,10 @@
               <label class="inline">最长边(px)
                 <input type="number" id="imgMax" min="0" step="16" value="0" style="width:80px" placeholder="0=不缩">
               </label>
+              <label class="inline">压到
+                <input type="number" id="imgTargetKB" min="0" step="10" value="0" style="width:80px" placeholder="0=不限"> KB
+              </label>
+              <label class="ck" title="质量压到最低仍超标时，逐档缩小尺寸继续压"><input type="checkbox" id="imgShrink" checked> 必要时缩小尺寸</label>
             </div>
           </div>
           <div class="card-b">
@@ -1283,6 +1301,7 @@
 <script src="js/outdir.js"></script>
 <script src="js/download.js"></script>
 <script src="js/hash.js"></script>
+<script src="js/text-core.js"></script>
 <script src="js/text.js"></script>
 <script src="js/diff.js"></script>
 <script src="js/convert.js"></script>

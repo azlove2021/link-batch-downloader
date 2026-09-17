@@ -2,7 +2,8 @@
 'use strict';
 (function(){
 var U = TB.util;
-var $ = U.$, notice = U.notice;
+var $ = U.$, notice = U.notice, esc = U.esc;
+var TC = TB.textCore || {};   /* 纯函数核心：js/text-core.js（脱敏 / 粘贴清洗） */
 
 function lines(){
   return $('textIn').value.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
@@ -86,6 +87,34 @@ document.querySelectorAll('[data-extract]').forEach(function(btn){
     var m = text.match(re) || [];
     setOut(m.join('\n'));
     notice('info','提取到 ' + m.length + ' 项');
+  };
+});
+
+/* 脱敏：手机号 / 身份证 / 邮箱打码。
+ * 正则和边界保护都在 js/text-core.js（有单元测试），这里只接线。 */
+var MASK_FN = { phone:'maskPhone', idcard:'maskIdCard', email:'maskEmail', all:'maskAll' };
+document.querySelectorAll('[data-mask]').forEach(function(btn){
+  btn.onclick = function(){
+    var fn = TC[MASK_FN[btn.getAttribute('data-mask')]];
+    var src = $('textOut').value || $('textIn').value;
+    if(!src){ notice('warn','没有内容'); return; }
+    if(!fn){ notice('err','脱敏模块未加载（js/text-core.js）'); return; }
+    var out = fn(src);
+    setOut(out);
+    notice(out === src ? 'warn' : 'info', out === src ? '没有找到需要脱敏的内容' : '已脱敏');
+  };
+});
+
+/* 粘贴清洗：网页 / PDF 复制来的文本一键整理 */
+var CLEAN_FN = { zw:'stripZeroWidth', half:'fullWidthToHalf', punct:'normalizePunct', join:'joinWrappedLines', all:'cleanPaste' };
+document.querySelectorAll('[data-clean]').forEach(function(btn){
+  btn.onclick = function(){
+    var fn = TC[CLEAN_FN[btn.getAttribute('data-clean')]];
+    var src = $('textOut').value || $('textIn').value;
+    if(!src){ notice('warn','没有内容'); return; }
+    if(!fn){ notice('err','清洗模块未加载（js/text-core.js）'); return; }
+    setOut(fn(src));
+    notice('info','已清洗');
   };
 });
 

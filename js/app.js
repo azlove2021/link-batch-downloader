@@ -29,8 +29,8 @@ var TOOLS = [
 
   { id:'invoice', name:'发票提取', desc:'发票号码/金额/购销方，导出表格', k:'invoice 发票 报销 税号 金额 对账', tier:2, grp:'办公实用' },
   { id:'pdf', name:'PDF 工具', desc:'合并、拆分、旋转、页码、加密码', k:'pdf 合并 拆分 旋转 页码 文档 密码 加密', tier:2, grp:'格式转换' },
-  { id:'text', name:'文本处理', desc:'去重、排序、多行转一行、提取号码链接', k:'text 文本 多行 逗号 去重 提取 清洗 换行', tier:2, grp:'数据与表格' },
-  { id:'image', name:'图片工具', desc:'压缩转换、裁剪、长图拼接', k:'image 图片 压缩 转换 水印 裁剪 拼接 长图', tier:2, grp:'格式转换' },
+  { id:'text', name:'文本处理', desc:'去重、排序、多行转一行、提取号码链接、脱敏打码、粘贴清洗', k:'text 文本 多行 逗号 去重 提取 清洗 换行 脱敏 打码 手机号 身份证 邮箱 全角 半角 零宽', tier:2, grp:'数据与表格' },
+  { id:'image', name:'图片工具', desc:'压缩转换、压到指定KB、裁剪、长图拼接', k:'image 图片 压缩 转换 水印 裁剪 拼接 长图 kb 指定大小', tier:2, grp:'格式转换' },
   { id:'folder', name:'文件夹归类', desc:'按扩展名/日期/关键字自动归子文件夹', k:'文件夹 归类 整理 发票 周报 自动', tier:2, grp:'文件与整理' },
   { id:'dl', name:'批量下载', desc:'扫 txt 清单，分目录批量下载，断点续传', k:'download 下载 链接 批量 txt', tier:2, grp:'文件与整理' },
   { id:'hash', name:'哈希校验', desc:'文件/文件夹 SHA-256 / MD5，可对比', k:'hash sha md5 校验 摘要 对比 一致', tier:2, grp:'文件与整理' },

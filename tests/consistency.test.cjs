@@ -194,6 +194,7 @@ for (let i = 0; i < ordered.length; i++) {
 /* 明确的依赖关系 */
 const ORDER_PAIRS = [
   ['js/rename-core.js', 'js/rename.js'],
+  ['js/text-core.js', 'js/text.js'],
   /* 数据工作台：纯函数核心要先于使用它的两个文件加载（顺序错了功能会静默失效） */
   ['js/data-core.js', 'js/datawork.js'],
   ['js/data-core.js', 'js/data-batch.js'],

@@ -72,7 +72,7 @@ function render(){
       '<div class="fn" title="'+esc(it.name)+'">'+esc(it.name)+'</div>' +
       '<div class="fs">'+fmtSize(it.file.size)+
         (it.blob ? ' → ' + fmtSize(it.blob.size) : '') +
-        (it.status==='ok' ? ' ✓' : it.status==='err' ? ' ⚠' : '') +
+        (it.status==='ok' ? (it.achieved === false ? ' ⚠未达标' : ' ✓') : it.status==='err' ? ' ⚠' : '') +
       '</div>';
     box.appendChild(d);
   });
@@ -92,6 +92,8 @@ $('imgRun').onclick = async function(){
   var fmt = $('imgFmt').value;
   var q = parseInt($('imgQuality').value, 10) / 100;
   var maxSide = parseInt($('imgMax').value, 10) || 0;
+  var targetKB = parseInt($('imgTargetKB').value, 10) || 0;
+  var allowShrink = $('imgShrink').checked;
   var wm = $('imgWatermark').checked ? $('imgWmText').value : '';
   var bg = $('imgBg').value;
   var ext = fmt === 'image/jpeg' ? '.jpg' : fmt === 'image/png' ? '.png' : '.webp';
@@ -101,36 +103,47 @@ $('imgRun').onclick = async function(){
     try{
       var img = await loadImage(it.url);
       var w = img.naturalWidth, h = img.naturalHeight;
-      var scale = maxSide ? Math.min(1, maxSide / Math.max(w,h)) : 1;
-      var cw = Math.max(1, Math.round(w * scale));
-      var ch = Math.max(1, Math.round(h * scale));
-      var canvas = document.createElement('canvas');
-      canvas.width = cw; canvas.height = ch;
-      var ctx = canvas.getContext('2d');
-      // 背景
-      if(fmt === 'image/jpeg' || (bg !== 'transparent' && bg !== 'auto')){
-        ctx.fillStyle = (bg === 'auto' || bg === 'transparent') ? '#ffffff' : bg;
-        ctx.fillRect(0,0,cw,ch);
-      }else if(bg === 'auto'){
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0,0,cw,ch);
+      var baseScale = maxSide ? Math.min(1, maxSide / Math.max(w,h)) : 1;
+      /* 按额外缩放系数出一张带背景/水印的图。目标大小迭代时会反复调用，
+       * 所以抽成函数：每一轮都从原图重新画，避免多次缩放损失画质。 */
+      var renderCanvas = function(extra){
+        var cw = Math.max(1, Math.round(w * baseScale * extra));
+        var ch = Math.max(1, Math.round(h * baseScale * extra));
+        var canvas = document.createElement('canvas');
+        canvas.width = cw; canvas.height = ch;
+        var ctx = canvas.getContext('2d');
+        // 背景
+        if(fmt === 'image/jpeg' || bg !== 'transparent'){
+          ctx.fillStyle = (bg === 'auto' || bg === 'transparent') ? '#ffffff' : bg;
+          ctx.fillRect(0,0,cw,ch);
+        }
+        ctx.drawImage(img, 0, 0, cw, ch);
+        if(wm){
+          var fsz = Math.max(12, Math.round(cw * 0.04));
+          ctx.font = fsz + 'px "Microsoft YaHei", sans-serif';
+          ctx.fillStyle = 'rgba(255,255,255,0.85)';
+          ctx.strokeStyle = 'rgba(0,0,0,0.35)';
+          ctx.lineWidth = Math.max(1, fsz/10);
+          ctx.textAlign = 'right';
+          ctx.textBaseline = 'bottom';
+          var pad = Math.round(cw * 0.02);
+          ctx.strokeText(wm, cw - pad, ch - pad);
+          ctx.fillText(wm, cw - pad, ch - pad);
+        }
+        return canvas;
+      };
+
+      if(targetKB > 0){
+        var r = await compressToTarget(renderCanvas, fmt, targetKB * 1024, allowShrink);
+        if(!r.blob) throw new Error('toBlob 失败（格式可能不支持）');
+        it.blob = r.blob;
+        it.achieved = r.achieved;
+      }else{
+        var blob = await blobOf(renderCanvas(1), fmt, q);
+        if(!blob) throw new Error('toBlob 失败（格式可能不支持）');
+        it.blob = blob;
+        it.achieved = true;
       }
-      ctx.drawImage(img, 0, 0, cw, ch);
-      if(wm){
-        var fsz = Math.max(12, Math.round(cw * 0.04));
-        ctx.font = fsz + 'px "Microsoft YaHei", sans-serif';
-        ctx.fillStyle = 'rgba(255,255,255,0.85)';
-        ctx.strokeStyle = 'rgba(0,0,0,0.35)';
-        ctx.lineWidth = Math.max(1, fsz/10);
-        ctx.textAlign = 'right';
-        ctx.textBaseline = 'bottom';
-        var pad = Math.round(cw * 0.02);
-        ctx.strokeText(wm, cw - pad, ch - pad);
-        ctx.fillText(wm, cw - pad, ch - pad);
-      }
-      var blob = await new Promise(function(res){ canvas.toBlob(res, fmt, q); });
-      if(!blob) throw new Error('toBlob 失败（格式可能不支持）');
-      it.blob = blob;
       it.outName = replaceExt(it.name, ext);
       it.status = 'ok';
     }catch(e){
@@ -142,8 +155,62 @@ $('imgRun').onclick = async function(){
   btn.disabled = false; btn.textContent = '开始转换';
   $('imgZip').disabled = !items.some(function(it){ return it.blob; });
   var ok = items.filter(function(it){ return it.status==='ok'; }).length;
-  notice(ok === items.length ? 'info' : 'warn', '完成：' + ok + '/' + items.length + ' 张');
+  var miss = items.filter(function(it){ return it.status==='ok' && it.achieved === false; }).length;
+  notice(ok === items.length && !miss ? 'info' : 'warn',
+    '完成：' + ok + '/' + items.length + ' 张' +
+    (miss ? '，其中 ' + miss + ' 张压不到目标（已输出最接近的版本）' : ''));
 };
+
+function blobOf(canvas, fmt, q){
+  return new Promise(function(res){ canvas.toBlob(res, fmt, q); });
+}
+function pickSmaller(a, b){
+  if(!a) return b || null;
+  if(!b) return a;
+  return b.size < a.size ? b : a;
+}
+/* 压到指定大小：
+ *   JPG/WebP —— 先试高质量 0.92，达标即止；超标就在 0.1~0.92 之间二分出
+ *               「能达标的最高质量」（约 7 轮，每轮一张 toBlob）。
+ *   PNG（没有质量参数）或质量压到底仍超标 —— 每轮把尺寸缩到 80% 再压，
+ *   直到达标、或缩到原图 1/5 以下、或用户没勾「必要时缩小尺寸」。
+ * 返回 { blob, achieved }；achieved=false 时 blob 是所有尝试里最小的一张。 */
+async function compressToTarget(renderCanvas, fmt, targetBytes, allowShrink){
+  var scale = 1, closest = null;
+  for(var round = 0; round < 8; round++){
+    var canvas = renderCanvas(scale);
+    var good = null;
+    if(fmt === 'image/png'){
+      var b0 = await blobOf(canvas, fmt);
+      if(b0){
+        closest = pickSmaller(closest, b0);
+        if(b0.size <= targetBytes) good = b0;
+      }
+    }else{
+      var lo = 0.1, hi = 0.92;
+      var bHi = await blobOf(canvas, fmt, hi);
+      if(bHi){
+        closest = pickSmaller(closest, bHi);
+        if(bHi.size <= targetBytes){
+          good = bHi;
+        }else{
+          for(var t = 0; t < 7; t++){
+            var mid = (lo + hi) / 2;
+            var b = await blobOf(canvas, fmt, mid);
+            if(!b) break;
+            closest = pickSmaller(closest, b);
+            if(b.size <= targetBytes){ good = b; lo = mid; }
+            else hi = mid;
+          }
+        }
+      }
+    }
+    if(good) return { blob: good, achieved: true, scale: scale };
+    if(!allowShrink || scale <= 0.25) break;
+    scale = scale * 0.8;
+  }
+  return { blob: closest, achieved: false, scale: scale };
+}
 
 function replaceExt(name, ext){
   return name.replace(/\.[A-Za-z0-9]{1,8}$/, '') + ext;
