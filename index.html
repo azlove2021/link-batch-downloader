@@ -267,10 +267,12 @@
             <div class="row">
               <button id="foPreview" class="pri">预览归类</button>
               <button id="foRun" class="ok" disabled>执行归类</button>
+              <button id="foUndo" title="把最近一次归类的文件移回原文件夹（本次会话内有效，最多记 5 步）" disabled>撤销上次归类</button>
+              <button id="foExpLog" class="sm" title="导出本次会话的归类记录 CSV（时间/规则/文件/去向/状态），可当处理报告留档" disabled>导出归类记录</button>
               <span class="muted" id="foStat"></span>
             </div>
             <div class="muted" style="margin-top:8px">
-              归类仅把文件移入同级子文件夹；不删除、不改内容。请先预览确认。
+              归类仅把文件移入同级子文件夹；不删除、不改内容。执行后可一键撤销（本次会话内），记录可导出 CSV 留档。
             </div>
             <div id="foList" style="margin-top:10px"></div>
           </div>
@@ -1332,6 +1334,7 @@
 <script src="js/pdf.js"></script>
 <script src="js/rename-core.js"></script>
 <script src="js/rename.js"></script>
+<script src="js/folder-core.js"></script>
 <script src="js/folderorg.js"></script>
 <script src="js/desktop.js"></script>
 <script src="js/app.js"></script>
