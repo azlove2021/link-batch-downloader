@@ -582,6 +582,113 @@ $('dwCleanReset').onclick = function(){
 };
 $('dwCleanUndo').onclick = undoPipe;
 
+/* ---------- 清洗方案：命名保存 / 一键重跑 / 导出导入（§3.1③） ---------- */
+var RECIPE_KEY = 'tb-clean-recipes';
+
+function loadRecipes(){
+  try{
+    var raw = localStorage.getItem(RECIPE_KEY);
+    return raw ? JSON.parse(raw) : {};
+  }catch(e){ return {}; }
+}
+function saveRecipes(obj){
+  try{ localStorage.setItem(RECIPE_KEY, JSON.stringify(obj)); return true; }
+  catch(e){ notice('err','保存失败：'+esc(e.message||e)); return false; }
+}
+function refreshRecipeSel(){
+  var sel = $('dwRecipeSel');
+  if (!sel) return;
+  var map = loadRecipes();
+  var cur = sel.value;
+  var names = Object.keys(map).sort();
+  sel.innerHTML = '<option value="">（未保存的方案）</option>' + names.map(function(n){
+    return '<option value="' + esc(n) + '">' + esc(n) + '（' + map[n].steps.length + ' 步）</option>';
+  }).join('');
+  if (cur && map[cur]) sel.value = cur;
+}
+function applyRecipe(steps){
+  if (!steps || !steps.length){ notice('warn','方案为空'); return; }
+  if (!DS.headers.length){ notice('warn','请先载入数据再套用方案'); return; }
+  var mapped = [], skipped = [];
+  steps.forEach(function(s){
+    var ci = -1;
+    if (s.colName != null) ci = DS.headers.indexOf(s.colName);
+    if (ci < 0 && s.col != null && s.col < DS.headers.length && !s.colName) ci = s.col;
+    if (ci < 0 && s.col != null && s.col < DS.headers.length &&
+        (s.colName == null || DS.headers[s.col] === s.colName)) ci = s.col;
+    if (ci < 0){
+      skipped.push(s.colName || ('第' + ((s.col||0)+1) + '列'));
+      return;
+    }
+    mapped.push({ op: s.op, col: ci, colName: DS.headers[ci], arg: s.arg, arg2: s.arg2 });
+  });
+  PIPE.steps = mapped;
+  renderPipe();
+  $('dwCleanOut').innerHTML = skipped.length
+    ? '<div class="notice warn" style="margin:0">已载入 ' + mapped.length + ' 步；列名对不上跳过：' + esc(skipped.join('、')) + '</div>'
+    : '';
+  notice('info','已载入方案，' + mapped.length + ' 步' + (skipped.length ? '，跳过 ' + skipped.length + ' 步' : ''));
+}
+
+if ($('dwRecipeSave')) $('dwRecipeSave').onclick = function(){
+  if (!PIPE.steps.length){ notice('warn','先添加清洗步骤再保存'); return; }
+  var name = ($('dwRecipeName').value || '').trim();
+  if (!name){ notice('warn','请填写方案名'); $('dwRecipeName').focus(); return; }
+  var map = loadRecipes();
+  map[name] = { steps: PIPE.steps.slice(), savedAt: Date.now(), note: '含 ' + PIPE.steps.length + ' 步' };
+  if (!saveRecipes(map)) return;
+  refreshRecipeSel();
+  $('dwRecipeSel').value = name;
+  notice('info','方案「' + esc(name) + '」已保存（本机浏览器）');
+};
+if ($('dwRecipeLoad')) $('dwRecipeLoad').onclick = function(){
+  var name = $('dwRecipeSel').value;
+  if (!name){ notice('warn','请选择要载入的方案'); return; }
+  var map = loadRecipes();
+  if (!map[name]){ notice('warn','方案不存在'); refreshRecipeSel(); return; }
+  applyRecipe(map[name].steps);
+};
+if ($('dwRecipeDel')) $('dwRecipeDel').onclick = function(){
+  var name = $('dwRecipeSel').value;
+  if (!name){ notice('warn','请选择要删除的方案'); return; }
+  if (!confirm('删除方案「' + name + '」？')) return;
+  var map = loadRecipes();
+  delete map[name];
+  saveRecipes(map);
+  refreshRecipeSel();
+  notice('info','已删除');
+};
+if ($('dwRecipeExport')) $('dwRecipeExport').onclick = function(){
+  var map = loadRecipes();
+  var names = Object.keys(map);
+  if (!names.length){ notice('warn','本机还没有保存过方案'); return; }
+  var payload = { kind: 'office-toolbox-clean-recipes', version: 1, recipes: map, exportedAt: new Date().toISOString() };
+  U.saveBlob(new Blob([JSON.stringify(payload, null, 2)], { type:'application/json;charset=utf-8' }), '清洗方案.json');
+  notice('info','已导出 ' + names.length + ' 个方案，可发给同事导入');
+};
+if ($('dwRecipeImport')) $('dwRecipeImport').onclick = function(){ $('dwRecipeFile').click(); };
+if ($('dwRecipeFile')) $('dwRecipeFile').onchange = async function(){
+  var f = this.files && this.files[0];
+  this.value = '';
+  if (!f) return;
+  try{
+    var obj = JSON.parse(await f.text());
+    var rec = (obj && obj.recipes) || {};
+    if (!Object.keys(rec).length) throw new Error('文件里没有方案');
+    var map = loadRecipes();
+    var n = 0;
+    Object.keys(rec).forEach(function(k){
+      if (rec[k] && rec[k].steps) { map[k] = rec[k]; n++; }
+    });
+    saveRecipes(map);
+    refreshRecipeSel();
+    notice('info','已导入 ' + n + ' 个方案');
+  }catch(e){
+    notice('err','导入失败：' + esc(e.message||e));
+  }
+};
+refreshRecipeSel();
+
 initOpSelect();
 renderPipe();
 

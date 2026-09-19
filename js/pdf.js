@@ -380,3 +380,125 @@ $('pdfCryptRun').onclick = async function(){
   }
 };
 })();
+
+/* ======== 图片 → PDF（凭证/扫描件合并） ======== */
+(function(){
+var U = TB.util;
+var $ = U.$, notice = U.notice, esc = U.esc;
+var imgs = []; // {name, url, w, h, blob}
+
+$('img2pdfPick').onclick = function(){ $('img2pdfFiles').click(); };
+$('img2pdfDrop').onclick = function(e){
+  if (e.target.tagName === 'BUTTON') return;
+  $('img2pdfFiles').click();
+};
+$('img2pdfDrop').addEventListener('dragover', function(e){ e.preventDefault(); this.classList.add('over'); });
+$('img2pdfDrop').addEventListener('dragleave', function(){ this.classList.remove('over'); });
+$('img2pdfDrop').addEventListener('drop', function(e){
+  e.preventDefault(); this.classList.remove('over');
+  addImgs(e.dataTransfer.files);
+});
+$('img2pdfFiles').onchange = function(){ addImgs(this.files); this.value = ''; };
+$('img2pdfClear').onclick = function(){
+  imgs.forEach(function(it){ try{ URL.revokeObjectURL(it.url); }catch(e){} });
+  imgs = [];
+  renderImgList();
+};
+
+function renderImgList(){
+  var el = $('img2pdfList');
+  if (!el) return;
+  if (!imgs.length){
+    $('img2pdfInfo').textContent = '未选择（支持 jpg/png/webp/bmp）';
+    el.innerHTML = '';
+    $('img2pdfRun').disabled = true;
+    return;
+  }
+  $('img2pdfInfo').textContent = '已选 ' + imgs.length + ' 张图片';
+  $('img2pdfRun').disabled = false;
+  el.innerHTML = '<div class="rtable"><table><thead><tr><th>#</th><th>文件</th><th>尺寸</th></tr></thead><tbody>' +
+    imgs.map(function(it, i){
+      return '<tr><td>'+(i+1)+'</td><td class="mono">'+esc(it.name)+'</td><td>'+(it.w||'?')+'×'+(it.h||'?')+'</td></tr>';
+    }).join('') + '</tbody></table></div>';
+}
+
+function addImgs(fileList){
+  var arr = Array.from(fileList || []).filter(function(f){ return /^image\//.test(f.type); });
+  if (!arr.length){ notice('warn','请选择图片文件'); return; }
+  arr.forEach(function(f){
+    var url = URL.createObjectURL(f);
+    var img = new Image();
+    img.onload = function(){
+      var it = imgs.find(function(x){ return x.name === f.name && x.url === url; });
+      if (it){ it.w = img.naturalWidth; it.h = img.naturalHeight; renderImgList(); }
+    };
+    img.src = url;
+    imgs.push({ name: f.name, url: url, file: f, w: 0, h: 0 });
+  });
+  renderImgList();
+  notice('info','已加入 ' + arr.length + ' 张');
+}
+
+function loadImg(url){
+  return new Promise(function(res, rej){
+    var img = new Image();
+    img.onload = function(){ res(img); };
+    img.onerror = function(){ rej(new Error('图片加载失败')); };
+    img.src = url;
+  });
+}
+
+$('img2pdfRun').onclick = async function(){
+  if (!imgs.length){ notice('warn','请先选择图片'); return; }
+  var btn = this; btn.disabled = true; btn.textContent = '生成中…';
+  try{
+    if (!window.PDFLib){ await TB.loadVendor('pdflib'); }
+    var PDFLib = window.PDFLib;
+    if (!PDFLib) throw new Error('pdf-lib 未加载，请重试');
+    var doc = await PDFLib.PDFDocument.create();
+    var sizeMode = $('img2pdfSize').value;
+    var marginMm = parseFloat($('img2pdfMargin').value) || 0;
+    var mm = 2.834645669; // pt per mm
+    var margin = marginMm * mm;
+    for (var i = 0; i < imgs.length; i++){
+      var imgEl = await loadImg(imgs[i].url);
+      // 抽到 canvas 再 encode，避免 HEIC 等 pdf-lib 不认；jpeg 优先
+      var c = document.createElement('canvas');
+      c.width = imgEl.naturalWidth; c.height = imgEl.naturalHeight;
+      c.getContext('2d').drawImage(imgEl, 0, 0);
+      var jpeg = await new Promise(function(res){ c.toBlob(res, 'image/jpeg', 0.92); });
+      if (!jpeg) throw new Error('图片转码失败：' + imgs[i].name);
+      var bytes = new Uint8Array(await jpeg.arrayBuffer());
+      var embedded = await doc.embedJpg(bytes);
+      var pw, ph;
+      if (sizeMode === 'a4'){
+        pw = 595.28; ph = 841.89;
+      }else{
+        pw = embedded.width + margin * 2;
+        ph = embedded.height + margin * 2;
+      }
+      var page = doc.addPage([pw, ph]);
+      var maxW = pw - margin * 2, maxH = ph - margin * 2;
+      var iw = embedded.width, ih = embedded.height;
+      var sc = Math.min(maxW / iw, maxH / ih, 1);
+      var dw = iw * sc, dh = ih * sc;
+      page.drawImage(embedded, {
+        x: (pw - dw) / 2,
+        y: (ph - dh) / 2,
+        width: dw,
+        height: dh
+      });
+    }
+    var out = await doc.save();
+    U.saveBlob(new Blob([out], { type:'application/pdf' }), '图片合并_' + imgs.length + '张.pdf');
+    $('img2pdfMsg').textContent = '输出 ' + doc.getPageCount() + ' 页 · ' + U.fmtSize(out.length);
+    notice('info','图片 PDF 已生成');
+  }catch(e){
+    notice('err','生成失败：' + esc(e.message||e));
+    $('img2pdfMsg').textContent = String(e.message||e);
+  }finally{
+    btn.disabled = false; btn.textContent = '生成 PDF';
+  }
+};
+renderImgList();
+})();

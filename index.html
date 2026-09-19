@@ -135,6 +135,18 @@
               <button class="sm" id="dwCleanAdd">＋ 添加步骤</button>
               <span class="muted" id="dwCleanOpHint"></span>
             </div>
+            <div class="row mb">
+              <label class="inline">清洗方案
+                <select id="dwRecipeSel"><option value="">（未保存的方案）</option></select>
+              </label>
+              <input type="text" id="dwRecipeName" placeholder="方案名，如：月度对账清洗" style="width:180px">
+              <button class="sm" id="dwRecipeSave">保存方案</button>
+              <button class="sm" id="dwRecipeLoad">载入方案</button>
+              <button class="sm dan" id="dwRecipeDel">删除方案</button>
+              <button class="sm" id="dwRecipeExport">导出方案</button>
+              <button class="sm" id="dwRecipeImport">导入方案…</button>
+              <input type="file" id="dwRecipeFile" accept=".json" style="display:none">
+            </div>
             <div id="dwPipe" style="margin-bottom:12px"></div>
             <div class="row">
               <button class="pri" id="dwCleanPrev" disabled>预览效果</button>
@@ -264,6 +276,7 @@
                 <input type="text" id="foKw" class="mono" placeholder="发票,合同,周报" style="width:180px">
               </label>
               <label class="ck"><input type="checkbox" id="foSkipTop" checked> 跳过已有子文件夹</label>
+              <button class="sm" id="foLoadRule" title="载入上次保存的规则">载入上次规则</button>
             </div>
             <div class="row">
               <button id="foPreview" class="pri">预览归类</button>
@@ -1046,6 +1059,38 @@
               <button class="pri" id="pdfCryptRun">处理 PDF</button>
               <span class="muted" id="pdfCryptMsg"></span>
             </div>
+          </div>
+        </div>
+        </div>
+
+        <!-- 图片 → PDF -->
+        <div class="merged"><h2 class="th">图片 → PDF</h2>
+        <p class="td">把多张扫描件 / 凭证照片合并成一个 PDF。按选择顺序一页一张，可选页面尺寸与边距。</p>
+        <div class="card">
+          <div class="card-b">
+            <div class="drop" id="img2pdfDrop">
+              <b>选择多张图片…</b><br>
+              <span class="muted" id="img2pdfInfo">未选择（支持 jpg/png/webp/bmp）</span>
+              <div class="row" style="justify-content:center;margin-top:10px">
+                <button class="sm" type="button" id="img2pdfPick">浏览图片…</button>
+                <button class="sm" type="button" id="img2pdfClear">清空</button>
+              </div>
+            </div>
+            <input type="file" id="img2pdfFiles" accept="image/*" multiple style="display:none">
+            <div class="row mb" style="margin-top:10px">
+              <label class="inline">页面
+                <select id="img2pdfSize">
+                  <option value="fit" selected>按图片自适应</option>
+                  <option value="a4">A4 纵向</option>
+                </select>
+              </label>
+              <label class="inline">边距(mm)
+                <input type="number" id="img2pdfMargin" value="0" min="0" max="30" style="width:70px">
+              </label>
+              <button class="pri" id="img2pdfRun">生成 PDF</button>
+              <span class="muted" id="img2pdfMsg"></span>
+            </div>
+            <div id="img2pdfList" class="muted"></div>
           </div>
         </div>
         </div>

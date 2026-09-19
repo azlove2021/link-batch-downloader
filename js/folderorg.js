@@ -13,8 +13,42 @@ var LOGS = []; // 已执行的归类 {ts, mode, root, rootHandle, items:[{name,t
 
 $('foMode').onchange = function(){
   $('foKwRow').style.display = this.value === 'keyword' ? '' : 'none';
+  persistRule();
 };
+$('foKw').oninput = function(){ persistRule(); };
+$('foSkipTop').onchange = function(){ persistRule(); };
 $('foMode').dispatchEvent(new Event('change'));
+
+var FO_RULE_KEY = 'tb-folder-rule';
+function persistRule(){
+  try{
+    localStorage.setItem(FO_RULE_KEY, JSON.stringify({
+      mode: $('foMode').value,
+      kw: $('foKw').value,
+      skipTop: $('foSkipTop').checked
+    }));
+  }catch(e){}
+}
+function loadRule(){
+  try{
+    var raw = localStorage.getItem(FO_RULE_KEY);
+    if (!raw) return null;
+    var o = JSON.parse(raw);
+    if (!o || !o.mode) return null;
+    $('foMode').value = o.mode;
+    $('foKw').value = o.kw || '';
+    $('foSkipTop').checked = o.skipTop !== false;
+    $('foMode').dispatchEvent(new Event('change'));
+    return o;
+  }catch(e){ return null; }
+}
+if ($('foLoadRule')) $('foLoadRule').onclick = function(){
+  var o = loadRule();
+  if (o) notice('info','已载入上次规则：' + $('foMode').options[$('foMode').selectedIndex].text);
+  else notice('warn','本机还没有保存过归类规则');
+};
+// 启动时静默恢复上次规则
+loadRule();
 
 $('foBrowse').onclick = async function(){
   if (!U.FS_OK){ notice('err','请用 Chrome / Edge 才能原地归类'); return; }
