@@ -462,5 +462,6 @@
     cleanNumber: cleanNumber,
     tableHtml: tableHtml,
   };
+  /* 公式列 / 交叉表在 js/data-formula.js 里挂到同一个 TB.dataCore 上 */
 })();
 

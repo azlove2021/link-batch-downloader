@@ -320,7 +320,8 @@ function refreshColSelects(){
   var pv = $('dwPvGroup');
   var pv2 = $('dwPvGroup2');
   var pvv = $('dwPvVal');
-  [sel, cmp, pv, pvv].forEach(function(el){
+  var xtR = $('dwXtRow'), xtC = $('dwXtCol'), xtV = $('dwXtVal');
+  [sel, cmp, pv, pvv, xtR, xtC, xtV].forEach(function(el){
     if (!el) return;
     var cur = el.value;
     el.innerHTML = DS.headers.map(function(h, i){
@@ -336,15 +337,19 @@ function refreshColSelects(){
     if (cur2 !== '' && cur2 !== undefined) pv2.value = cur2;
   }
   // 默认数值列：找含金额/数量/额/数 的列，否则最后一列
-  if (pvv && DS.headers.length){
-    var guess = DS.headers.findIndex(function(h){
+  var guessNum = DS.headers.length - 1;
+  if (DS.headers.length){
+    var g = DS.headers.findIndex(function(h){
       return /金额|销售额|数量|合计|额|数|sum|amount|qty|count/i.test(h);
     });
-    if (guess < 0) guess = DS.headers.length - 1;
-    if (!pvv.value) pvv.value = String(guess);
+    if (g >= 0) guessNum = g;
   }
-  // 载入数据后启用透视/清洗控件
-  ['dwCleanCol','dwPvGroup','dwPvGroup2','dwPvVal','dwCmpKey'].forEach(function(id){
+  if (pvv && !pvv.value && DS.headers.length) pvv.value = String(guessNum);
+  if (xtV && !xtV.value && DS.headers.length) xtV.value = String(guessNum);
+  if (xtR && !xtR.value && DS.headers.length) xtR.value = '0';
+  if (xtC && !xtC.value && DS.headers.length > 1) xtC.value = '1';
+  // 载入数据后启用透视/清洗/交叉表控件
+  ['dwCleanCol','dwPvGroup','dwPvGroup2','dwPvVal','dwCmpKey','dwXtRow','dwXtCol','dwXtVal'].forEach(function(id){
     var el = $(id);
     if (el && DS.headers.length) el.disabled = false;
   });
@@ -909,18 +914,244 @@ ensureDom();
 if (scroller){
   scroller.addEventListener('scroll', function(){
     clearTimeout(window.__dwSc);
-    // 直接画，避免延迟；10万行下足够轻
     renderVisible();
   });
 }
 window.addEventListener('resize', function(){ renderVisible(); });
 renderVisible();
 
-// 初始空表头，方便看见布局
 DS.headers = ['（请载入 CSV / XLSX，或点「生成 10 万行演示」）'];
 DS.rows = [];
 DS.view = [];
 renderHead();
+
+/* ---------- 对外接口：供 js/data-batch.js（多表合并 / 按列拆表）复用 ---------- */
+
+function fillColSelect(el, pickFn){
+  if (!el) return;
+  var cur = el.value;
+  el.innerHTML = DS.headers.map(function(h,i){
+    return '<option value="'+i+'">'+esc(h)+'</option>';
+  }).join('');
+  if (pickFn) el.value = String(pickFn());
+  else if (cur !== '' && +cur < DS.headers.length) el.value = cur;
+}
+
+function guessNumCol(){
+  var g = DS.headers.findIndex(function(h){
+    return /金额|销售额|数量|合计|额|数|sum|amount|qty/i.test(h);
+  });
+  return g >= 0 ? g : Math.max(0, DS.headers.length - 1);
+}
+
+/* 可选：透视结果点行回查明细 */
+function filterByGroup(colIdx, value){
+  DS.filters = {};
+  DS.filters[colIdx] = String(value);
+  if (typeof rebuildView === 'function') rebuildView(true);
+  if (typeof renderHead === 'function') renderHead();
+  if (typeof renderVisible === 'function') renderVisible();
+  notice('info','已在主表中筛选：' + esc(DS.headers[colIdx] || '') + ' = ' + esc(value));
+}
+
+/* 交叉表 */
+function renderCrosstab(){
+  if (!DS.rows.length){ notice('warn','请先载入数据'); return; }
+  var rowCol = +$('dwXtRow').value || 0;
+  var colCol = +$('dwXtCol').value || 0;
+  var valCol = +$('dwXtVal').value || 0;
+  var op = $('dwXtOp').value;
+  if (rowCol === colCol){ notice('warn','行分组与列分组不能相同'); return; }
+  var t0 = Date.now();
+  var data = { headers: DS.headers, rows: DS.rows };
+  if (!C0.crosstab){ notice('err','交叉表核心未加载'); return; }
+  XT = C0.crosstab(data, rowCol, colCol, valCol, op);
+  var opName = {sum:'求和',avg:'平均',count:'计数'}[op] || op;
+  var h = '<div class="rtable" style="max-height:360px"><table><thead><tr><th>'+esc(DS.headers[rowCol])+' \\ '+esc(DS.headers[colCol])+'</th>';
+  XT.colLabels.forEach(function(c){ h += '<th>'+esc(c)+'</th>'; });
+  h += '<th>合计</th></tr></thead><tbody>';
+  var maxR = Math.min(XT.rowLabels.length, 80);
+  for (var i=0;i<maxR;i++){
+    h += '<tr><td class="mono">'+esc(XT.rowLabels[i])+'</td>';
+    XT.cells[i].forEach(function(v){ h += '<td class="mono">'+v+'</td>'; });
+    h += '<td class="mono"><b>'+XT.rowTotals[i]+'</b></td></tr>';
+  }
+  if (XT.rowLabels.length > maxR){
+    h += '<tr><td class="muted">…其余 '+ (XT.rowLabels.length-maxR) +' 行见导出</td><td colspan="'+(XT.colLabels.length+1)+'"></td></tr>';
+  }
+  h += '<tr><td><b>列合计</b></td>';
+  XT.colTotals.forEach(function(v){ h += '<td class="mono"><b>'+v+'</b></td>'; });
+  h += '<td class="mono"><b>'+XT.grand+'</b></td></tr>';
+  h += '</tbody></table></div>';
+  $('dwXtOut').innerHTML = h;
+  $('dwXtStat').textContent = '共 '+XT.rowLabels.length+' 行 × '+XT.colLabels.length+' 列 · '+opName+' · 总计 '+XT.grand+' · '+(Date.now()-t0)+'ms';
+  $('dwXtExport').disabled = false;
+  if (U.oplog) U.oplog.add('交叉表', DS.headers[rowCol]+'×'+DS.headers[colCol]+' '+opName+'：'+XT.rowLabels.length+'×'+XT.colLabels.length);
+}
+
+$('dwXtRun').onclick = renderCrosstab;
+$('dwXtExport').onclick = function(){
+  if (!XT){ notice('warn','请先生成交叉表'); return; }
+  var rh = DS.headers[(+$('dwXtRow').value)||0];
+  var rows = [];
+  rows.push([rh].concat(XT.colLabels).concat(['合计']));
+  for (var i=0;i<XT.rowLabels.length;i++){
+    rows.push([XT.rowLabels[i]].concat(XT.cells[i]).concat([XT.rowTotals[i]]));
+  }
+  rows.push(['列合计'].concat(XT.colTotals).concat([XT.grand]));
+  exportRows(rows[0], rows.slice(1), '交叉表');
+};
+
+/* 公式列 */
+$('dwFmHelp').onclick = function(){
+  if (!DS.headers.length){ notice('info','先载入数据。示例：税额 = [金额] * 0.13  或  合计 = [数量] * [单价]'); return; }
+  var num = DS.headers[guessNumCol()];
+  $('dwFmExpr').value = '新列 = [' + num + '] * 1.13';
+  notice('info','已填入示例，可改成你需要的公式');
+};
+$('dwFmRun').onclick = function(){
+  if (!DS.rows.length){ notice('warn','请先载入数据'); return; }
+  var formula = $('dwFmExpr').value;
+  var t0 = Date.now();
+  var res = C0.applyFormulaColumn({ headers: DS.headers, rows: DS.rows }, formula);
+  if (!res.ok){ notice('err', res.err || '公式无效'); return; }
+  DS.headers = res.headers;
+  DS.rows = res.rows;
+  rebuildView(false);
+  renderHead();
+  renderVisible();
+  refreshColSelects();
+  var oplog = U.oplog;
+  if (oplog) oplog.add('公式列', formula + ' → ' + res.name + '（' + res.rows.length + ' 行）');
+  $('dwFmStat').textContent = '已添加列「'+res.name+'」· 空值 ' + res.bad + ' 行 · ' + (Date.now()-t0) + 'ms';
+  notice('info','公式列「'+esc(res.name)+'」已加入');
+};
+
+/* 图表：基于最近透视或交叉表首行系列 */
+function drawChart(kind){
+  var canvas = $('dwPvCanvas');
+  if (!canvas){ notice('err','画布不可用'); return; }
+  var labels = null, values = null, title = '';
+  if (PV && PV.labels && PV.labels.length){
+    labels = PV.labels; values = PV.values; title = PV.title || '透视汇总';
+  } else if (XT && XT.rowLabels.length){
+    labels = XT.rowLabels.slice(0, 20);
+    values = XT.rowTotals.slice(0, 20);
+    title = '交叉表合计（前'+labels.length+'行）';
+  } else {
+    notice('warn','请先生成「透视汇总」或「交叉表」再画图');
+    return;
+  }
+  var W = canvas.width, H = canvas.height;
+  var ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0,0,W,H);
+  ctx.fillStyle = '#1f2937';
+  ctx.font = '14px system-ui,sans-serif';
+  ctx.textAlign = 'left';
+  ctx.fillText(title, 12, 22);
+
+  var maxV = 0;
+  values.forEach(function(v){ if (v > maxV) maxV = v; });
+  if (maxV <= 0) maxV = 1;
+
+  var n = Math.min(labels.length, 20);
+  var pad = { l: 48, r: 16, t: 40, b: 48 };
+  var iw = W - pad.l - pad.r, ih = H - pad.t - pad.b;
+
+  if (kind === 'pie'){
+    var cx = W/2, cy = pad.t + ih/2, R = Math.min(iw, ih)/2 - 8;
+    var total = 0;
+    for (var i=0;i<n;i++) total += Math.max(0, values[i]);
+    if (total <= 0) total = 1;
+    var angle = -Math.PI/2;
+    var colors = ['#2563eb','#16a34a','#d97706','#dc2626','#7c3aed','#0891b2','#db2777','#65a30d'];
+    for (var i=0;i<n;i++){
+      var slice = Math.max(0, values[i]) / total * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, R, angle, angle + slice);
+      ctx.closePath();
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.fill();
+      angle += slice;
+    }
+    // legend
+    var ly = pad.t;
+    ctx.font = '12px system-ui,sans-serif';
+    for (var i=0;i<n;i++){
+      ctx.fillStyle = colors[i % colors.length];
+      ctx.fillRect(W - 140, ly + i*16, 10, 10);
+      ctx.fillStyle = '#334155';
+      var lab = String(labels[i]);
+      if (lab.length > 10) lab = lab.slice(0,10)+'…';
+      ctx.fillText(lab + ' ' + values[i], W - 124, ly + i*16 + 9);
+    }
+  } else {
+    // bar
+    var barW = iw / n * 0.7;
+    var gap = iw / n * 0.3;
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.beginPath();
+    ctx.moveTo(pad.l, pad.t + ih);
+    ctx.lineTo(pad.l + iw, pad.t + ih);
+    ctx.stroke();
+    for (var i=0;i<n;i++){
+      var h = Math.max(2, (Math.max(0, values[i]) / maxV) * ih);
+      var x = pad.l + i * (barW + gap) + gap/2;
+      var y = pad.t + ih - h;
+      ctx.fillStyle = '#2563eb';
+      ctx.fillRect(x, y, barW, h);
+      ctx.fillStyle = '#64748b';
+      ctx.font = '10px system-ui,sans-serif';
+      ctx.save();
+      ctx.translate(x + barW/2, pad.t + ih + 4);
+      ctx.rotate(-Math.PI/4);
+      var lab = String(labels[i]);
+      if (lab.length > 6) lab = lab.slice(0,6);
+      ctx.fillText(lab, 0, 0);
+      ctx.restore();
+    }
+  }
+  canvas.style.display = 'inline-block';
+  $('dwPvChartDl').disabled = false;
+  if (U.oplog) U.oplog.add('图表', kind + ' · ' + title);
+}
+
+$('dwPvChartBar').onclick = function(){ drawChart('bar'); };
+$('dwPvChartPie').onclick = function(){ drawChart('pie'); };
+$('dwPvChartDl').onclick = function(){
+  var c = $('dwPvCanvas');
+  if (!c) return;
+  c.toBlob(function(b){ if (b) U.saveBlob(b, '图表.png'); });
+};
+
+/* 透视结果缓存，供图表使用（在原 dwPvRun 末尾也要写 PV） */
+var _oldPvRun = $('dwPvRun').onclick;
+if (_oldPvRun) {
+  $('dwPvRun').onclick = function(){
+    _oldPvRun.call(this);
+    var g1 = +$('dwPvGroup').value || 0;
+    var labels = [], values = [];
+    var g2 = $('dwPvGroup2').value;
+    // pvRows in outer scope if available via closure - read DOM instead
+    var table = document.querySelector('#dwPvOut table tbody');
+    if (table){
+      Array.prototype.forEach.call(table.querySelectorAll('tr'), function(tr){
+        var tds = tr.querySelectorAll('td');
+        if (tds.length >= 2){
+          labels.push(tds[0].textContent.trim());
+          var last = tds[tds.length-2];
+          var v = parseFloat(String(last.textContent).replace(/,/g,''));
+          if (!isNaN(v)) values.push(v);
+        }
+      });
+      PV = { labels: labels, values: values, title: '透视汇总 · ' + (DS.headers[g1]||'') };
+    }
+  };
+}
+
 /* ---------- 对外接口：供 js/data-batch.js（多表合并 / 按列拆表）复用 ---------- */
 TB.datawork = {
   getDS: function(){ return DS; },
