@@ -11,19 +11,38 @@ var $ = U.$, notice = U.notice, esc = U.esc, fmtSize = U.fmtSize;
 var DPC = TB.dupCore || {};
 
 var rootHandle = null;
+var rootB = null;          // 目录对比的 B 文件夹
 var FILES = [];         // {handle, parent, path, name, size, lastModified, file, moved?}
 var contentGroups = []; // [{hash, size, items:[file...], keeper}]
 var namePairs = [];     // [{a, b, score}]
+var abResult = null;    // {onlyA, onlyB, diff}
 var movedLog = null;    // {base, items:[{sub, name, parent, fromName}]}
 
 function updateBtns(){
-  $('dfScan').disabled = !rootHandle;
-  var hasResult = contentGroups.length > 0 || namePairs.length > 0;
+  var abMode = $('dfModeAb') && $('dfModeAb').checked;
+  $('dfScan').disabled = abMode ? !(rootHandle && rootB) : !rootHandle;
+  var hasResult = contentGroups.length > 0 || namePairs.length > 0 || abResult;
   $('dfExpCsv').disabled = !hasResult;
   var dupCount = contentGroups.reduce(function(n,g){ return n + g.items.length - 1; }, 0);
-  $('dfQuarantine').disabled = !dupCount || !rootHandle;
+  $('dfQuarantine').disabled = !dupCount || !rootHandle || !!abMode;
   $('dfUndo').disabled = !movedLog;
 }
+
+$('dfModeAb').onchange = function(){
+  $('dfPathBRow').style.display = this.checked ? '' : 'none';
+  updateBtns();
+};
+
+$('dfBrowseB').onclick = async function(){
+  if (!U.FS_OK){ notice('err','请用 Chrome / Edge'); return; }
+  try{
+    var h = await window.showDirectoryPicker({ id:'dup-find-b', mode:'read' });
+    rootB = h;
+    $('dfPathB').value = h.name + '\\';
+    updateBtns();
+    notice('info','已选对比文件夹 B：' + h.name);
+  }catch(e){ if (e.name !== 'AbortError') notice('err','选择失败：'+esc(e.message)); }
+};
 
 $('dfBrowse').onclick = async function(){
   if (!U.FS_OK){ notice('err','请用 Chrome / Edge（需要本地文件夹读写）。'); return; }
@@ -31,15 +50,16 @@ $('dfBrowse').onclick = async function(){
     var h = await window.showDirectoryPicker({ id:'dup-find', mode:'readwrite' });
     rootHandle = h;
     $('dfPath').value = h.name + '\\';
-    FILES = []; contentGroups = []; namePairs = []; movedLog = null;
+    FILES = []; contentGroups = []; namePairs = []; movedLog = null; abResult = null;
     $('dfList').innerHTML = '';
     $('dfStat').textContent = '已选择：' + h.name;
     updateBtns();
   }catch(e){ if (e.name !== 'AbortError') notice('err','选择失败：'+esc(e.message)); }
 };
 $('dfClear').onclick = function(){
-  rootHandle = null; FILES = []; contentGroups = []; namePairs = []; movedLog = null;
-  $('dfPath').value = ''; $('dfList').innerHTML = ''; $('dfStat').textContent = '';
+  rootHandle = null; rootB = null; FILES = []; contentGroups = []; namePairs = []; movedLog = null; abResult = null;
+  $('dfPath').value = ''; if ($('dfPathB')) $('dfPathB').value = '';
+  $('dfList').innerHTML = ''; $('dfStat').textContent = '';
   updateBtns();
 };
 
@@ -60,31 +80,82 @@ async function walk(dir, prefix, onFile){
 $('dfScan').onclick = async function(){
   if (!rootHandle){ notice('warn','请先选择文件夹'); return; }
   var wantContent = $('dfModeContent').checked, wantName = $('dfModeName').checked;
-  if (!wantContent && !wantName){ notice('warn','至少勾选一种查找方式'); return; }
+  var wantAb = $('dfModeAb') && $('dfModeAb').checked;
+  if (wantAb){
+    if (!rootB){ notice('warn','目录对比需要选择文件夹 B'); return; }
+  } else if (!wantContent && !wantName){ notice('warn','至少勾选一种查找方式'); return; }
   var btn = this; btn.disabled = true; btn.textContent = '扫描中…';
   var t0 = Date.now();
   try{
-    FILES = []; contentGroups = []; namePairs = [];
+    FILES = []; contentGroups = []; namePairs = []; abResult = null;
     await walk(rootHandle, '', function(f){
       FILES.push(f);
       if (FILES.length % 200 === 0) btn.textContent = '已发现 ' + FILES.length + ' 个文件…';
     });
-    if (wantContent) await findContentDups(btn);
-    if (wantName) findNameDups();
-    render();
-    var dupCount = contentGroups.reduce(function(n,g){ return n + g.items.length - 1; }, 0);
-    var waste = contentGroups.reduce(function(n,g){ return n + g.size * (g.items.length - 1); }, 0);
-    $('dfStat').textContent = '共 ' + FILES.length + ' 个文件 · 用时 ' + ((Date.now()-t0)/1000).toFixed(1) + 's';
-    notice('info', '扫描完成：' + FILES.length + ' 个文件' +
-      (wantContent ? '，内容重复 ' + contentGroups.length + ' 组（多余副本 ' + dupCount + ' 个，占 ' + fmtSize(waste) + '）' : '') +
-      (wantName ? '，相似文件名 ' + namePairs.length + ' 对' : ''));
+    if (wantAb){
+      var filesB = [];
+      await walk(rootB, '', function(f){ filesB.push(f); });
+      var mapA = Object.create(null), mapB = Object.create(null);
+      FILES.forEach(function(f){ mapA[f.path.toLowerCase()] = f; });
+      filesB.forEach(function(f){ mapB[f.path.toLowerCase()] = f; });
+      var onlyA = [], onlyB = [], diff = [];
+      Object.keys(mapA).forEach(function(k){
+        var a = mapA[k], b = mapB[k];
+        if (!b){ onlyA.push(a); return; }
+        if (a.size !== b.size) diff.push({ a:a, b:b, why:'大小不同 ' + a.size + ' vs ' + b.size });
+      });
+      Object.keys(mapB).forEach(function(k){
+        if (!mapA[k]) onlyB.push(mapB[k]);
+      });
+      abResult = { onlyA: onlyA, onlyB: onlyB, diff: diff, nameA: rootHandle.name, nameB: rootB.name };
+      renderAb();
+      $('dfStat').textContent = 'A ' + FILES.length + ' 个 · B ' + filesB.length + ' 个 · 只在A ' + onlyA.length + ' · 只在B ' + onlyB.length + ' · 同名异内容 ' + diff.length;
+      notice('info','目录对比完成：只在A '+onlyA.length+' · 只在B '+onlyB.length+' · 同名异内容 '+diff.length);
+    } else {
+      if (wantContent) await findContentDups(btn);
+      if (wantName) findNameDups();
+      render();
+      var dupCount = contentGroups.reduce(function(n,g){ return n + g.items.length - 1; }, 0);
+      var waste = contentGroups.reduce(function(n,g){ return n + g.size * (g.items.length - 1); }, 0);
+      $('dfStat').textContent = '共 ' + FILES.length + ' 个文件 · 用时 ' + ((Date.now()-t0)/1000).toFixed(1) + 's';
+      notice('info', '扫描完成：' + FILES.length + ' 个文件' +
+        (wantContent ? '，内容重复 ' + contentGroups.length + ' 组（多余副本 ' + dupCount + ' 个，占 ' + fmtSize(waste) + '）' : '') +
+        (wantName ? '，相似文件名 ' + namePairs.length + ' 对' : ''));
+    }
+    if (U.oplog) U.oplog.add(wantAb ? '目录差异' : '重复文件扫描',
+      wantAb ? (rootHandle.name + ' ↔ ' + rootB.name) : ('A=' + FILES.length));
   }catch(e){
-    notice('err','扫描失败：' + esc(e.message||e));
+    notice('err','扫描失败：'+esc(e.message||e));
   }finally{
     btn.disabled = false; btn.textContent = '开始扫描';
     updateBtns();
   }
 };
+
+function renderAb(){
+  if (!abResult){ return; }
+  var h = '<div class="rtable"><table><thead><tr><th>情况</th><th>文件</th><th>大小</th></tr></thead><tbody>';
+  function rows(list, tag, cls){
+    var n = Math.min(list.length, 40);
+    for (var i=0;i<n;i++){
+      var f = list[i];
+      h += '<tr><td>'+tag+'</td><td class="mono">'+esc(f.path)+'</td><td>'+fmtSize(f.size)+'</td></tr>';
+    }
+    if (list.length > n) h += '<tr><td colspan="3" class="muted">…其余 '+(list.length-n)+' 条见导出</td></tr>';
+  }
+  h += '<tr><td colspan="3" class="muted" style="background:#fafbfd">只在 A（'+abResult.nameA+'）：'+abResult.onlyA.length+'</td></tr>';
+  rows(abResult.onlyA, '仅A');
+  h += '<tr><td colspan="3" class="muted" style="background:#fafbfd">只在 B（'+abResult.nameB+'）：'+abResult.onlyB.length+'</td></tr>';
+  rows(abResult.onlyB, '仅B');
+  h += '<tr><td colspan="3" class="muted" style="background:#fafbfd">同名但大小不同：'+abResult.diff.length+'</td></tr>';
+  var nd = Math.min(abResult.diff.length, 40);
+  for (var i=0;i<nd;i++){
+    var d = abResult.diff[i];
+    h += '<tr><td>异</td><td class="mono">'+esc(d.a.path)+'<br><span class="muted">'+esc(d.why)+'</span></td><td></td></tr>';
+  }
+  h += '</tbody></table></div>';
+  $('dfList').innerHTML = h;
+}
 
 async function findContentDups(btn){
   var sizeGroups = DPC.groupBySize(FILES);
@@ -247,6 +318,13 @@ $('dfExpCsv').onclick = function(){
     rows.push(['相似文件名', '对' + (pi+1), 'A', FILES[p.a].path, FILES[p.a].size, '', (p.score*100).toFixed(1) + '%']);
     rows.push(['相似文件名', '对' + (pi+1), 'B', FILES[p.b].path, FILES[p.b].size, '', (p.score*100).toFixed(1) + '%']);
   });
+  if (abResult){
+    abResult.onlyA.forEach(function(f){ rows.push(['目录差异','仅A','—', f.path, f.size, '', '']); });
+    abResult.onlyB.forEach(function(f){ rows.push(['目录差异','仅B','—', f.path, f.size, '', '']); });
+    abResult.diff.forEach(function(d){
+      rows.push(['目录差异','同名异内容', d.why, d.a.path, d.a.size, '', '']);
+    });
+  }
   if (rows.length < 2){ notice('info','没有结果可导出。'); return; }
   var csv = U.toCsv(rows);
   U.saveBlob(new Blob(['\ufeff' + csv], {type:'text/csv;charset=utf-8'}), '重复文件清单.csv');

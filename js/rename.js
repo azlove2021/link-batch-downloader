@@ -36,7 +36,8 @@ function refreshUndoUi(){
       ? ('撤销上次（可退 ' + undoStack.length + ' 步）')
       : '撤销上次';
   }
-  if (l) l.disabled = logEntries.length === 0;
+  if (l) l.disabled = !logEntries.length;
+  if ($('rnToFolder')) $('rnToFolder').disabled = !dirHandle;
 }
 
 /* ---------- 载入 ---------- */
@@ -308,6 +309,16 @@ $('rnLog').onclick = function(){
   }).join('\r\n');
   U.saveBlob(new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' }), '改名记录.csv');
   notice('info','已导出 ' + logEntries.length + ' 条记录');
+};
+
+/* 流水线：改名后接着归类 */
+if ($('rnToFolder')) $('rnToFolder').onclick = function(){
+  if (!dirHandle){ notice('warn','请先选择文件夹并完成改名'); return; }
+  if (TB.folderorg && TB.folderorg.setHandle){
+    TB.folderorg.setHandle(dirHandle, dirHandle.name);
+  }
+  var nav = document.querySelector('[data-tool="folder"]');
+  if (nav) nav.click();
 };
 })();
 

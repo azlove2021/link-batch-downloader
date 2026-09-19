@@ -15,6 +15,19 @@ $('foMode').onchange = function(){
   $('foKwRow').style.display = this.value === 'keyword' ? '' : 'none';
   persistRule();
 };
+
+/* 供「批量重命名」流水线接入 */
+TB.folderorg = {
+  setHandle: function(h, name){
+    dirHandle = h;
+    if ($('foPath')) $('foPath').value = (name || (h && h.name) || '') + '\\';
+    if ($('foStat')) $('foStat').textContent = '已从重命名接入：' + (name || (h && h.name) || '');
+    plan = [];
+    if ($('foList')) $('foList').innerHTML = '';
+    if ($('foRun')) $('foRun').disabled = true;
+    notice('info','已接入文件夹归类，可选规则后「预览归类」');
+  }
+};
 $('foKw').oninput = function(){ persistRule(); };
 $('foSkipTop').onchange = function(){ persistRule(); };
 $('foMode').dispatchEvent(new Event('change'));

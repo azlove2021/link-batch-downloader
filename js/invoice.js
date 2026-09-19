@@ -402,6 +402,54 @@ $('invOnlyMissing').addEventListener('change', renderTable);
 /* ---------- 图片发票批量 OCR（桌面版 · Windows 系统 OCR，全程离线） ----------
  * 后端 ocr_image：先系统 OCR（零依赖），失败再尝试本机 Tesseract。
  * 注意：拖拽进来的 File 拿不到本机路径，所以这里走系统文件对话框选择。 */
+var ocrFailedFiles = [];   /* [{path,name}] 可一键重试 */
+async function runOcrBatch(files){
+  var D = TB.desktop;
+  if(!D || !D.isDesktop()){
+    notice('err','图片 OCR 需桌面版；网页版请先用其它工具识别文字后粘贴');
+    return;
+  }
+  if(!files || !files.length) return;
+  var btn = $('invOcrBtn');
+  btn.disabled = true;
+  var env = D.env ? D.env() : null;
+  var parts = [], failed = [];
+  ocrFailedFiles = [];
+  $('invOcrProgRow').style.display = '';
+  for(var i=0;i<files.length;i++){
+    btn.textContent = '识别中 ' + (i+1) + '/' + files.length + ' …';
+    var pct = Math.round((i) * 100 / files.length);
+    $('invOcrBar').style.width = pct + '%';
+    $('invOcrProg').textContent = 'OCR ' + (i+1) + '/' + files.length + '：' + files[i].name;
+    $('invOcrFailList').textContent = failed.length ? ('失败 ' + failed.length) : '';
+    try{
+      var text = await D.invoke('ocr_image', { path: files[i].path, tesseract: (env && env.tesseract) || null });
+      if(text && text.trim()) parts.push('#### ' + files[i].name + '\n' + text.trim());
+      else {
+        failed.push(files[i].name + '：未识别到文字');
+        ocrFailedFiles.push(files[i]);
+      }
+    }catch(e){
+      failed.push(files[i].name + '：' + String(e.message || e).slice(0,60));
+      ocrFailedFiles.push(files[i]);
+    }
+  }
+  $('invOcrBar').style.width = '100%';
+  btn.disabled = false; btn.textContent = '识别图片发票…（桌面）';
+  $('invOcrRetry').disabled = ocrFailedFiles.length === 0;
+  $('invOcrFailList').textContent = ocrFailedFiles.length
+    ? ('失败 ' + ocrFailedFiles.length + ' 张，可「重试失败张」')
+    : '全部识别成功';
+  if(parts.length){
+    $('invText').value = ($('invText').value ? $('invText').value + '\n\n====\n\n' : '') + parts.join('\n\n====\n\n');
+    $('invParse').click();
+  }
+  if(failed.length){
+    notice('warn','OCR 完成 ' + parts.length + ' 张，失败 ' + failed.length + ' 张（' + esc(failed[0]) + (failed.length>1?' 等':'') + '）');
+  }else if(parts.length){
+    notice('info','OCR 完成并已解析 ' + parts.length + ' 张（全程离线）');
+  }
+}
 $('invOcrBtn').onclick = async function(){
   var D = TB.desktop;
   if(!D || !D.isDesktop()){
@@ -411,29 +459,80 @@ $('invOcrBtn').onclick = async function(){
   var files = null;
   try{ files = await D.pickFiles(['png','jpg','jpeg','bmp','webp','tif','tiff']); }
   catch(e){ notice('err','选择失败：'+esc(String(e.message||e))); return; }
-  if(!files || !files.length) return;
-  var btn = this; btn.disabled = true;
-  var env = D.env ? D.env() : null;
-  var parts = [], failed = [];
-  for(var i=0;i<files.length;i++){
-    btn.textContent = '识别中 ' + (i+1) + '/' + files.length + ' …';
-    try{
-      var text = await D.invoke('ocr_image', { path: files[i].path, tesseract: (env && env.tesseract) || null });
-      parts.push('#### ' + files[i].name + '\n' + ((text && text.trim()) ? text.trim() : '（未识别到文字）'));
-    }catch(e){
-      failed.push(files[i].name + '：' + String(e.message || e).slice(0,60));
-    }
+  await runOcrBatch(files);
+};
+$('invOcrRetry').onclick = async function(){
+  if(!ocrFailedFiles.length){ notice('info','没有可重试的失败项'); return; }
+  var batch = ocrFailedFiles.slice();
+  await runOcrBatch(batch);
+};
+
+/* ---------- 报销汇总表：按开票月份 / 销售方 汇总价税合计 ---------- */
+function parseInvDate(s){
+  if(!s) return '';
+  var t = String(s).replace(/\s+/g,'');
+  var m = t.match(/(\d{4})[-/.年](\d{1,2})/);
+  if(m) return m[1] + '-' + ('0'+m[2]).slice(-2);
+  return t.slice(0,7) || '';
+}
+function numMoney(v){
+  var n = parseFloat(String(v==null?'':v).replace(/[¥￥,，\s元]/g,''));
+  return isNaN(n) ? 0 : n;
+}
+$('invSummaryBtn').onclick = function(){
+  if(!records.length){ notice('warn','请先解析发票'); return; }
+  var byMonth = {}, bySeller = {};
+  var totalCount = records.length, totalAmt = 0, dupN = 0;
+  records.forEach(function(r){
+    var month = parseInvDate(r.date) || '（无日期）';
+    var seller = (r.seller || '').split(/[/\\]/)[0].trim() || '（无销售方）';
+    var amt = numMoney(r.total || r.amount);
+    totalAmt += amt;
+    byMonth[month] = byMonth[month] || { n:0, amt:0 };
+    byMonth[month].n++; byMonth[month].amt += amt;
+    bySeller[seller] = bySeller[seller] || { n:0, amt:0 };
+    bySeller[seller].n++; bySeller[seller].amt += amt;
+    if(isDup && isDup(r)) dupN++;
+  });
+  function table(title, map){
+    var keys = Object.keys(map).sort();
+    var h = '<div class="rtable" style="margin-bottom:10px"><table><thead><tr><th colspan="3">'+esc(title)+'</th></tr>'+
+      '<tr><th>项</th><th>张数</th><th>价税合计</th></tr></thead><tbody>';
+    keys.forEach(function(k){
+      h += '<tr><td class="mono">'+esc(k)+'</td><td>'+map[k].n+'</td><td class="mono">'+numMoney(map[k].amt).toFixed(2)+'</td></tr>';
+    });
+    h += '</tbody></table></div>';
+    return h;
   }
-  btn.disabled = false; btn.textContent = '识别图片发票…（桌面）';
-  if(parts.length){
-    $('invText').value = ($('invText').value ? $('invText').value + '\n\n====\n\n' : '') + parts.join('\n\n====\n\n');
-    $('invParse').click();   // OCR 完自动解析，少点一步
-  }
-  if(failed.length){
-    notice('warn','OCR 完成 ' + parts.length + ' 张，失败 ' + failed.length + ' 张（' + esc(failed[0]) + (failed.length>1?' 等':'') + '）');
-  }else if(parts.length){
-    notice('info','OCR 完成并已解析 ' + parts.length + ' 张（全程离线）');
-  }
+  var html = '<div class="out" style="font-family:inherit;white-space:normal;margin-bottom:8px">' +
+    '<b>报销汇总</b>：共 '+totalCount+' 张 · 价税合计 <b>'+totalAmt.toFixed(2)+'</b>' +
+    (dupN ? ' · <span style="color:var(--warn)">其中重复 '+dupN+' 张</span>' : '') +
+    (ledger ? ' · 台账 '+ledgerName : '') + '</div>' +
+    table('按开票月份', byMonth) + table('按销售方（前 20）', (function(){
+      var top = Object.keys(bySeller).sort(function(a,b){ return bySeller[b].amt - bySeller[a].amt; }).slice(0,20);
+      var o = {};
+      top.forEach(function(k){ o[k] = bySeller[k]; });
+      return o;
+    })());
+  $('invSummaryWrap').innerHTML = html;
+  /* 也写一份可导出的行 */
+  window.__invSummaryRows = [['类型','项','张数','价税合计']];
+  Object.keys(byMonth).sort().forEach(function(k){
+    window.__invSummaryRows.push(['月份', k, byMonth[k].n, Math.round(byMonth[k].amt*100)/100]);
+  });
+  Object.keys(bySeller).sort(function(a,b){ return bySeller[b].amt - bySeller[a].amt; }).forEach(function(k){
+    window.__invSummaryRows.push(['销售方', k, bySeller[k].n, Math.round(bySeller[k].amt*100)/100]);
+  });
+  window.__invSummaryRows.push(['总计', '全部发票', totalCount, Math.round(totalAmt*100)/100]);
+  if(U.oplog) U.oplog.add('发票报销汇总', totalCount+' 张，合计 '+totalAmt.toFixed(2));
+  notice('info','报销汇总已生成（再点一次导出按钮会带汇总列，或用下方复制）');
+  /* 提供下载 */
+  var rows = window.__invSummaryRows;
+  var csv = U.toCsv(rows.slice(1).map(function(r){ return r.slice(1); }).map(function(r){ return r; }), ',');
+  /* 导出带头表 */
+  var body = [rows[0]].concat(rows.slice(1));
+  U.saveBlob(new Blob(['﻿'+U.toCsv(body, ',')], {type:'text/csv;charset=utf-8'}), '发票报销汇总.csv');
+  notice('info','已导出 发票报销汇总.csv');
 };
 
 /* ---------- 台账比对：载入公司台账 xlsx/csv，按发票号码找「台账里没有的票」 ---------- */

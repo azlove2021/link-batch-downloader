@@ -350,9 +350,15 @@
               <button id="dfBrowse" class="pri">浏览…</button>
               <button id="dfClear" class="sm">清空</button>
             </div>
+            <div class="pathbox" id="dfPathBRow" style="display:none">
+              <span class="lbl">对比文件夹 B</span>
+              <input id="dfPathB" readonly placeholder="选择第二个文件夹，与 A 对比差异">
+              <button id="dfBrowseB" class="sm">浏览 B…</button>
+            </div>
             <div class="opts">
               <label><input type="checkbox" id="dfModeContent" checked> 内容完全重复（按大小分组 + SHA-256，精确）</label>
               <label><input type="checkbox" id="dfModeName"> 文件名相似（找「报告.docx / 报告 (1).docx」这类）</label>
+              <label><input type="checkbox" id="dfModeAb"> 两目录差异（只在 A / 只在 B / 两边同名不同内容）</label>
               <label>相似阈值 <input type="number" id="dfThreshold" value="0.88" min="0.5" max="1" step="0.02" style="width:70px"></label>
             </div>
             <div class="row">
@@ -924,12 +930,20 @@
               <button class="sm" id="invLedgerBtn">载入台账比对…</button>
               <input type="file" id="invLedger" accept=".xlsx,.xls,.csv" style="display:none">
               <label class="ck" title="载入台账后可用：只显示台账里找不到的发票"><input type="checkbox" id="invOnlyMissing"> 只看台账没有的</label>
+              <button class="sm" id="invSummaryBtn">报销汇总表</button>
+              <button class="sm" id="invOcrRetry" disabled>重试失败张</button>
               <button class="sm" id="invClear">清空</button>
               <button class="sm" id="invCsv">导出 CSV</button>
               <button class="sm" id="invXlsx">导出 Excel</button>
               <span class="muted" id="invStat"></span>
             </div>
+            <div class="row" style="margin-top:8px;display:none" id="invOcrProgRow">
+              <span class="muted" id="invOcrProg">OCR 进度</span>
+              <div class="gp" style="flex:1;max-width:240px"><i id="invOcrBar"></i></div>
+              <span class="muted" id="invOcrFailList"></span>
+            </div>
             <div style="margin-top:14px" id="invTableWrap"></div>
+            <div id="invSummaryWrap" style="margin-top:10px"></div>
             <details class="help">
               <summary>说明：图片 OCR 与 PDF 支持范围</summary>
               <div>
@@ -1219,6 +1233,7 @@
             <div class="row" style="margin-top:12px">
               <button class="pri" id="rnRun">执行重命名</button>
               <button id="rnUndo" disabled>撤销上次</button>
+              <button id="rnToFolder" class="sm" title="改名完成后，把同一文件夹接到「文件夹归类」继续整理" disabled>接着归类此文件夹</button>
               <button class="sm" id="rnLog" disabled>导出改名记录</button>
             </div>
           </div>
